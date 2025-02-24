@@ -1,0 +1,217 @@
+﻿@page "/"
+@using Hdf5Viewer.Shared
+@inject HttpClient Http // HttpClient 주입
+
+<PageTitle>HDF5 Viewer</PageTitle>
+
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <div class="col-md-4 border-end">
+            <h3>HDF5 File Structure</h3>
+            <InputFile OnChange="@LoadHdf5File" />
+            @if (hdf5TreeRoot != null)
+            {
+                <BlazorTreeView Nodes="@hdf5TreeRoot.Children" NodeSelected="@OnTreeNodeSelected" />
+            }
+             @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger mt-2" role="alert">
+                    @errorMessage
+                </div>
+            }
+        </div>
+        <div class="col-md-8">
+            <h3>Dataset Data</h3>
+            @if (tableData != null && tableData.RowData.Any())
+            {
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            @foreach (var columnName in tableData.ColumnNames)
+                            {
+                                <th>@columnName</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in tableData.RowData)
+                        {
+                            <tr>
+                                @foreach (var cell in row)
+                                {
+                                    <td>@cell</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else if (tableData != null && !tableData.RowData.Any() && string.IsNullOrEmpty(errorMessage))
+            {
+                <p>No data to display for the selected dataset.</p>
+            }
+             @if (!string.IsNullOrEmpty(datasetErrorMessage))
+            {
+                <div class="alert alert-danger mt-2" role="alert">
+                    @datasetErrorMessage
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private Hdf5TreeNode? hdf5TreeRoot;
+    private Hdf5TableData? tableData;
+    private string errorMessage = string.Empty;
+    private string datasetErrorMessage = string.Empty;
+
+
+    private async Task LoadHdf5File(InputFileChangeEventArgs e)
+    {
+        errorMessage = string.Empty;
+        datasetErrorMessage = string.Empty;
+        hdf5TreeRoot = null;
+        tableData = null;
+
+        try
+        {
+            var browserFile = e.File;
+            if (browserFile != null)
+            {
+                using var content = new MultipartFormDataContent();
+                var fileContent = new StreamContent(browserFile.OpenReadStream(browserFile.Size));
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(browserFile.ContentType);
+                content.Add(fileContent, "file", browserFile.Name);
+
+                var response = await Http.PostAsync("api/hdf5/upload", content); // Server API 호출 (파일 업로드)
+                if (!response.IsSuccessStatusCode)
+                {
+                    errorMessage = $"File upload failed: {response.ReasonPhrase}";
+                    return;
+                }
+
+                hdf5TreeRoot = await Http.GetFromJsonAsync<Hdf5TreeNode>("api/hdf5/structure"); // Server API 호출 (구조 요청)
+                 if (hdf5TreeRoot == null || !hdf5TreeRoot.HasChildren) {
+                    errorMessage = "Invalid or empty HDF5 file structure.";
+                    hdf5TreeRoot = null; // Clear tree root on error
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading HDF5 file: {ex.Message}";
+            Console.WriteLine(errorMessage);
+            hdf5TreeRoot = null; // Clear tree root on error
+        }
+        StateHasChanged(); // UI 업데이트
+    }
+
+
+    private async Task OnTreeNodeSelected(Hdf5TreeNode node)
+    {
+        datasetErrorMessage = string.Empty;
+        tableData = null;
+        if (node != null && node.Type == "Dataset")
+        {
+            try
+            {
+                tableData = await Http.GetFromJsonAsync<Hdf5TableData>($"api/hdf5/dataset?datasetPath={node.Path}"); // Server API 호출 (데이터 요청)
+                if (tableData == null || !tableData.RowData.Any()) {
+                     datasetErrorMessage = "No data found for this dataset.";
+                     tableData = null; // Clear table data on error
+                }
+            }
+        
+            catch (Exception ex)
+            {
+                datasetErrorMessage = $"Error loading dataset data: {ex.Message}";
+                Console.WriteLine(datasetErrorMessage);
+                tableData = null; // Clear table data on error
+            }
+    
+        }
+        else
+        {
+            tableData = null; // Dataset이 아닌 경우 테이블 데이터 초기화
+        }
+
+        StateHasChanged(); // UI 업데이트
+    }
+
+}
+
+
+<style>
+.container-fluid.h-100 {
+    height: 100vh; /* 뷰포트 높이 맞춤 */
+}
+.row.h-100 {
+    height: 100%;
+}
+
+.col-md-4.border-end {
+    overflow-y: auto; /* TreeView 영역 스크롤 */
+    height: 100%;
+}
+
+.col-md-8 {
+    overflow-x: auto; /* 테이블 영역 가로 스크롤 */
+    height: 100%;
+    padding-left: 20px;
+}
+
+.treeview {
+    list-style-type: none;
+    padding-left: 10px;
+}
+
+.tree-node {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px 0;
+}
+
+.node-icon {
+    margin-right: 5px;
+}
+
+.toggle-button {
+    margin-left: 5px;
+    padding: 0px 5px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.toggle-button.expanded::before {
+    content: "-"; /* 확장 시 */
+}
+
+.toggle-button.collapsed::before {
+    content: "+"; /* 축소 시 */
+}
+
+.treeview-children {
+    list-style-type: none;
+    padding-left: 20px;
+    margin-left: 0px;
+}
+
+ .table-bordered {
+    border: 1px solid #dee2e6;
+}
+
+.table-bordered th, .table-bordered td {
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.table-bordered thead th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+</style>

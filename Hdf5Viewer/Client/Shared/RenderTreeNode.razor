@@ -1,0 +1,80 @@
+@using Hdf5Viewer.Shared
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Rendering
+@using Microsoft.AspNetCore.Components.Web
+
+
+<li>
+    <div class="tree-node" @onclick="@SelectNodeAsync">
+        <span class="node-icon">
+            @if (Node.Type == "Group")
+            {
+                @if (Node.HasChildren)
+                {
+                    @if (Node.IsExpanded)
+                    {
+                        @:📂
+                    }
+                    else
+                    {
+                        @:📁
+                    }
+                }
+                else
+                {
+                    @:📁
+                }
+            }
+            else if (Node.Type == "Dataset")
+            {
+                @:📊
+            }
+            else
+            {
+                @:📄
+            }
+        </span>
+        <span class="node-name">@Node.Name</span>
+    </div>
+
+    @if (Node.HasChildren)
+    {
+        @if (Node.IsExpanded)
+        {
+            <button class="toggle-button expanded" @onclick="@ToggleNodeAsync">-</button>
+            <ul class="treeview-children">
+                 @foreach (var childNode in Node.Children)
+                {
+                    <RenderTreeNode Node="childNode" NodeSelected="NodeSelected" ToggleNode="ToggleNode" /> 
+                }
+            </ul>
+        }
+        else
+        {
+            <button class="toggle-button collapsed" @onclick="@ToggleNodeAsync">+</button>
+        }
+    }
+</li>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public Hdf5TreeNode? Node { get; set; }
+
+     [Parameter, EditorRequired]
+    public EventCallback<Hdf5TreeNode> NodeSelected { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<Hdf5TreeNode> ToggleNode { get; set; }
+
+
+    private async Task ToggleNodeAsync(MouseEventArgs e)
+    {
+        await ToggleNode.InvokeAsync(Node);
+    }
+
+    private async Task SelectNodeAsync(MouseEventArgs e)
+    {
+        await NodeSelected.InvokeAsync(Node);
+    }
+}
