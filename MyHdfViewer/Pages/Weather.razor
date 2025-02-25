@@ -1,40 +1,15 @@
 ﻿@page "/weather"
 @inject HttpClient Http
 
-<PageTitle>Weather</PageTitle>
+<PageTitle>Fluent Weather</PageTitle>
 
-<h1>Weather</h1>
 
-<p>This component demonstrates fetching data from the server.</p>
-
-@if (forecasts == null)
+@if (items == null)
 {
-    <p><em>Loading...</em></p>
+    <em>Loading...</em>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th aria-label="Temperature in Celsius">Temp. (C)</th>
-                <th aria-label="Temperature in Farenheit">Temp. (F)</th>
-                <th>Summary</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var forecast in forecasts)
-            {
-                <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
     <FluentDataGrid Items="@items" GridTemplateColumns="1fr 1fr 1fr 1fr">
         <ChildContent>
             <PropertyColumn Property="@(p => p.Date)" Sortable="true" />
@@ -43,8 +18,8 @@ else
             <PropertyColumn Property="@(p => p.Summary)" />
         </ChildContent>
     </FluentDataGrid>
-
 }
+
 
 @code {
     record Forecast(DateOnly Date, int TemperatureC, int TemperatureF, string Summary);
@@ -57,7 +32,7 @@ else
 
         for (int i = 0; i < size; i++)
         {
-            data[i] = new Forecast(forecasts[i].Date, forecasts[i].TemperatureC, forecasts[i].TemperatureF, $"{forecasts[i].Summary}");
+            data[i] = new Forecast(forecasts![i].Date, forecasts[i].TemperatureC, forecasts[i].TemperatureF, $"{forecasts[i].Summary}");
         }
         return data.AsQueryable();
     }
@@ -68,7 +43,7 @@ else
     {
         forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
 
-        items = GenerateSampleGridData(forecasts.Length);
+        items = GenerateSampleGridData(forecasts!.Length);
     }
 
     public class WeatherForecast

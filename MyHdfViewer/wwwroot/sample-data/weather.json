@@ -23,5 +23,30 @@
     "date": "2022-01-10",
     "temperatureC": -2,
     "summary": "Chilly"
+  },
+  {
+    "date": "2022-01-11",
+    "temperatureC": -64,
+    "summary": "Windy"
+  },
+  {
+    "date": "2022-01-12",
+    "temperatureC": 22,
+    "summary": "Stromy"
+  },
+  {
+    "date": "2022-01-13",
+    "temperatureC": 32,
+    "summary": "Sunny"
+  },
+  {
+    "date": "2022-01-14",
+    "temperatureC": 27,
+    "summary": "Cloudy"
+  },
+  {
+    "date": "2022-01-15",
+    "temperatureC": 15,
+    "summary": "Rainy"
   }
 ]
