@@ -1,0 +1,26 @@
+﻿@page "/counter"
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @currentCount</p>
+
+<FluentStack HorizontalGap="10" VerticalGap="20">
+    <FluentButton @onclick="IncrementCount" Appearance="Appearance.Accent">Add 1</FluentButton>
+    <FluentButton @onclick="IncrementDbCount" Appearance="Appearance.Accent">Add 2</FluentButton>
+</FluentStack>
+
+@code {
+    private static int currentCount = 0;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+    private void IncrementDbCount()
+    {
+        currentCount+=2;
+    }
+}

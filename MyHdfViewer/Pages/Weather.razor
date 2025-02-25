@@ -1,0 +1,84 @@
+﻿@page "/weather"
+@inject HttpClient Http
+
+<PageTitle>Weather</PageTitle>
+
+<h1>Weather</h1>
+
+<p>This component demonstrates fetching data from the server.</p>
+
+@if (forecasts == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th aria-label="Temperature in Celsius">Temp. (C)</th>
+                <th aria-label="Temperature in Farenheit">Temp. (F)</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forecast in forecasts)
+            {
+                <tr>
+                    <td>@forecast.Date.ToShortDateString()</td>
+                    <td>@forecast.TemperatureC</td>
+                    <td>@forecast.TemperatureF</td>
+                    <td>@forecast.Summary</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <FluentDataGrid Items="@items" GridTemplateColumns="1fr 1fr 1fr 1fr">
+        <ChildContent>
+            <PropertyColumn Property="@(p => p.Date)" Sortable="true" />
+            <PropertyColumn Property="@(p => p.TemperatureC)" Sortable="true" />
+            <PropertyColumn Property="@(p => p.TemperatureF)" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Summary)" />
+        </ChildContent>
+    </FluentDataGrid>
+
+}
+
+@code {
+    record Forecast(DateOnly Date, int TemperatureC, int TemperatureF, string Summary);
+
+    IQueryable<Forecast>? items = Enumerable.Empty<Forecast>().AsQueryable();
+
+    private IQueryable<Forecast> GenerateSampleGridData(int size)
+    {
+        Forecast[] data = new Forecast[size];
+
+        for (int i = 0; i < size; i++)
+        {
+            data[i] = new Forecast(forecasts[i].Date, forecasts[i].TemperatureC, forecasts[i].TemperatureF, $"{forecasts[i].Summary}");
+        }
+        return data.AsQueryable();
+    }
+
+    private WeatherForecast[]? forecasts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+
+        items = GenerateSampleGridData(forecasts.Length);
+    }
+
+    public class WeatherForecast
+    {
+        public DateOnly Date { get; set; }
+
+        public int TemperatureC { get; set; }
+
+        public string? Summary { get; set; }
+
+        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    }
+}
