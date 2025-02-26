@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MyHdfViewer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+84d1407a3c9f466d9d34843c04e7551ecea6f705")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4f07b5652f91dae0e25ffeea191adce9a9fd633c")]
 [assembly: System.Reflection.AssemblyProductAttribute("MyHdfViewer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MyHdfViewer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
