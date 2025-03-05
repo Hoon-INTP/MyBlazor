@@ -1,0 +1,77 @@
+@using MyHdfViewer.Models
+@using Microsoft.FluentUI.AspNetCore.Components
+
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h5>노드 정보</h5>
+    </div>
+
+    <div class="card-body">
+        <h6>@Node.Name</h6>
+
+        @if (Node is Hdf5Dataset dataset)
+        {
+            <p><strong>Type:</strong> @dataset.DataType</p>
+            <p><strong>Rank:</strong> @(dataset.Dimensions.Length.ToString())</p>
+            <p><strong>Size:</strong> @(string.Join(" x ", dataset.Dimensions))</p>
+
+            @if (dataset.Data != null)
+            {
+                <div>
+                    <p><strong>데이터 미리보기:</strong></p>
+                    <pre>
+                        @foreach (var data in dataset.GetDataArray())
+                        {
+                            @(data + "\n")
+                        }
+                    </pre>
+                </div>
+            }
+            else
+            {
+                <button class="btn btn-sm btn-primary" @onclick="() => LoadDataset()">데이터 로드</button>
+            }
+        }
+
+        @if (Node.Attributes.Any())
+        {
+            <div class="mt-4">
+                <h6>속성</h6>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>이름</th>
+                            <th>값</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var attr in Node.Attributes)
+                        {
+                            <tr>
+                                <td>@attr.Name</td>
+                                <td>@attr.Value</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Hdf5Node Node { get; set; } = null!;
+
+    private async Task LoadDataset()
+    {
+        if (Node is Hdf5Dataset dataset && dataset.Data == null)
+        {
+            // Implement dataset loading logic here
+            // For example:
+            // await dataset.LoadDataAsync();
+            // StateHasChanged();
+        }
+    }
+}

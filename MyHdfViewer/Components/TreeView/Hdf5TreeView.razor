@@ -1,0 +1,80 @@
+@using MyHdfViewer.Models
+@using Microsoft.FluentUI.AspNetCore.Components
+
+<div class="card mt-3">
+<FluentCard>
+    <div class="card-header">
+        <h5>파일 구조</h5>
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <strong>파일명:</strong> @FileModel.FileName
+        </div>
+
+        <div class="tree-view">
+            @RenderNode(FileModel.RootGroup)
+        </div>
+    </div>
+</FluentCard>
+</div>
+
+@code {
+    [Parameter]
+    public Hdf5FileModel FileModel { get; set; } = null!;
+
+    [Parameter]
+    public Hdf5Node? SelectedNode { get; set; }
+
+    [Parameter]
+    public EventCallback<Hdf5Node> OnNodeSelected { get; set; }
+
+    private RenderFragment RenderNode(Hdf5Node node) => builder =>
+    {
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "node");
+
+        // 노드 자체를 렌더링
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "class", "node-label");
+        builder.AddAttribute(4, "onclick", EventCallback.Factory.Create<MouseEventArgs>(this, async () => await OnNodeSelected.InvokeAsync(node)));
+
+        // 노드 타입에 따른 아이콘
+        builder.OpenElement(5, "span");
+        switch (node.NodeType)
+        {
+            case Hdf5NodeType.Group:
+                builder.AddAttribute(6, "class", "oi oi-folder");
+                break;
+            case Hdf5NodeType.Dataset:
+                builder.AddAttribute(6, "class", "oi oi-file");
+                break;
+            default:
+                builder.AddAttribute(6, "class", "oi oi-question-mark");
+                break;
+        }
+        builder.CloseElement(); // 아이콘 span
+
+        builder.OpenElement(7, "span");
+        builder.AddContent(8, $" {node.Name}");
+        builder.CloseElement(); // 이름 span
+
+        builder.CloseElement(); // node-label
+
+        // 자식 노드가 있는 경우 재귀적으로 렌더링
+        if (node is Hdf5Group group && group.Children.Any())
+        {
+            builder.OpenElement(9, "div");
+            builder.AddAttribute(10, "class", "node-children");
+            builder.AddAttribute(11, "style", "margin-left: 20px;");
+
+            foreach (var child in group.Children)
+            {
+                builder.AddContent(12, RenderNode(child));
+            }
+
+            builder.CloseElement(); // node-children
+        }
+
+        builder.CloseElement(); // node
+    };
+}

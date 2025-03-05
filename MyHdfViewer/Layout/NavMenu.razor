@@ -1,4 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using Microsoft.FluentUI.AspNetCore.Components
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">MyHdfViewer</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -8,24 +10,25 @@
 </div>
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
+    <FluentStack Orientation="Orientation.Horizontal" Width="100%">
+        <div>
+            <FluentNavMenu @bind-Expanded="@Expanded" Width="250" Collapsible="true" CollapsedChildNavigation="@EnableCollapsedChildNavigation" Title="Collapsible demo">
+                <FluentNavLink Icon="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size24.Home())" Href="">Home</FluentNavLink>
+                <FluentNavLink Icon="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size24.Cloud())" Href="/hdf5-viewer">HDF5 Node Data</FluentNavLink>
+            </FluentNavMenu>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="hdf5-viewer">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> hdf5-viewer
-            </NavLink>
-        </div>
-    </nav>
+    </FluentStack>
 </div>
+
 
 @code {
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    bool Expanded = true;
+
+    bool EnableCollapsedChildNavigation = true;
 
     private void ToggleNavMenu()
     {
