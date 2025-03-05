@@ -12,16 +12,32 @@
 
 <h3>HDF5 파일 뷰어</h3>
 
-<FluentDivider Style="height: 100%;" Role="DividerRole.Separator" Orientation="Orientation.Horizontal"></FluentDivider>
+<div>
+    <FluentDivider Style="height: 100%;" Role="DividerRole.Separator" Orientation="Orientation.Horizontal"></FluentDivider>
+</div>
 
 <div class="row mt-3">
     <div class="col-md-6">
-        <div class="card">
+        <FluentCard>
             <div class="card-header">
                 <h5>파일 선택</h5>
             </div>
+
+            <div>
+                <FluentDivider Style="height: 100%;" Role="DividerRole.Separator" Orientation="Orientation.Horizontal"></FluentDivider>
+            </div>
+
             <div class="card-body">
-                <InputFile OnChange="@LoadFile1" accept=".h5,.hdf5" multiple="false"/>
+                @* <InputFile OnChange="@LoadFile1" accept=".h5,.hdf5" multiple="false"/> *@
+                <FluentInputFile @ref="@selectedFileStream"
+                    AnchorId="MyUploadStream"
+                    DragDropZoneVisible="false"
+                    Mode="InputFileMode.Stream"
+                    Multiple="false"
+                    MaximumFileSize="@(20 * 1024 * 1024)"
+                    Accept=".h5, .hdf5"
+                    OnFileUploaded="@OnFileUploadedAsync"
+                    OnCompleted="@OnCompleted" />
 
                 @if (!string.IsNullOrEmpty(errorMessage))
                 {
@@ -29,6 +45,17 @@
                         @errorMessage
                     </div>
                 }
+
+                <FluentStack Orientation="Orientation.Horizontal"
+                        HorizontalAlignment="HorizontalAlignment.Left"
+                        VerticalAlignment="VerticalAlignment.Center"
+                        HorizontalGap="4"
+                        style="margin-top: 1rem;">
+                    <FluentButton Appearance="Appearance.Accent" Id="MyUploadStream">
+                        Upload files
+                    </FluentButton>
+                    <FluentTextField @bind-Value=currFile ReadOnly="true"></FluentTextField>
+                </FluentStack>
 
                 @if (isLoading)
                 {
@@ -39,11 +66,11 @@
 
                 @if(currFile != prevFile)
                 {
-                    Console.WriteLine($"File has Changed {prevFile?.Name} to {currFile?.Name}");
+                    Console.WriteLine($"File has Changed {prevFile} to {currFile}");
                     prevFile = currFile;
                 }
             </div>
-        </div>
+        </FluentCard>
     </div>
 
     <div class="row mt-4">
@@ -53,13 +80,15 @@
                 {
                     <Hdf5TreeView FileModel="@fileModel" SelectedNode="@selectedNode" OnNodeSelected="@SelectNode" />
                 }
-                else{
+                else
+                {
                     <div class="alert alert-info mt-3">
                         <p>Select File first.</p>
                     </div>
                 }
             </div>
         </div>
+
         <div class="col-md-6">
             <div class="card-body">
                 @if (selectedNode != null)
@@ -82,13 +111,23 @@
     private Hdf5Node? selectedNode;
     private string? errorMessage;
     private bool isLoading;
-    private IBrowserFile? currFile;
-    private IBrowserFile? prevFile;
+
+    //private IBrowserFile? currFile; // For MemoryStream
+    //private IBrowserFile? prevFile; // For MemoryStream
+
+    private FluentInputFile? selectedFileStream = default!;
+    private string? currFile = default!; // For temporary file
+    private string? prevFile = default!; // For temporary file
+
+    int? progressPercent;
+    string? progressTitle;
+
+    List<string> Files = new();
 
 
     private void LoadFile(InputFileChangeEventArgs e)
     {
-        currFile = e.File;
+        //currFile = e.File;
     }
 
     private async Task LoadFile1(InputFileChangeEventArgs e)
@@ -235,6 +274,63 @@
             {
                 // 파일 삭제 실패 시 무시
             }
+        }
+    }
+
+    async Task OnFileUploadedAsync(FluentInputFileEventArgs file)
+    {
+        try
+        {
+            isLoading = true;
+
+            var stopwatch = Stopwatch.StartNew();
+
+            progressPercent = file.ProgressPercent;
+            progressTitle = file.ProgressTitle;
+
+            if (!file.Name.EndsWith(".h5") && !file.Name.EndsWith(".hdf5"))
+            {
+                errorMessage = "Invalid file format. Please select an HDF5 file.";
+                return;
+            }
+
+            var localFile = Path.GetTempFileName() + file.Name;
+
+            currFile = file.Name;
+
+            Files.Add(localFile);
+
+            Console.WriteLine($"Temp File path{localFile}");
+
+            await using FileStream fs = new(localFile, FileMode.Create);
+            await file.Stream!.CopyToAsync(fs);
+            await file.Stream!.DisposeAsync();
+            stopwatch.Stop();
+
+            fileModel = Hdf5Reader.ReadHdf5FromTempFile(localFile, currFile);
+            selectedNode = fileModel.RootGroup;
+
+            Console.WriteLine($"File Loaded [Name: {currFile}], [Size: {file.Size / 1024}KB], [Elapsed Time: {stopwatch.ElapsedMilliseconds}ms]");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error occurs during file loading: {ex.Message}";
+            Console.Error.WriteLine(ex);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    void OnCompleted(IEnumerable<FluentInputFileEventArgs> files)
+    {
+        progressPercent = selectedFileStream!.ProgressPercent;
+        progressTitle = selectedFileStream!.ProgressTitle;
+
+        foreach (var file in Files)
+        {
+            File.Delete(file);
         }
     }
 }

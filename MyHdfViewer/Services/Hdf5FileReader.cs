@@ -34,6 +34,32 @@ namespace MyHdfViewer.Services
         }
 
         /// <summary>
+        /// Convert MemoryStream of HDF5 File to Hdf5FileModel
+        /// </summary>
+        /// <param name="path">Path of temporary file</param>
+        /// <param name="fileName">HDF5 file name</param>
+        /// <returns>Hdf5FileModel</returns>
+        public Hdf5FileModel ReadHdf5FromTempFile(string path, string fileName)
+        {
+            using var root = H5File.OpenRead(path);
+
+            var rootGroup = ReadGroup(root.Group(root.Name), "/");
+
+            rootGroup.Name = fileName;
+
+            //string filePath = "";
+
+            var fileModel = new Hdf5FileModel
+            {
+                //Memorystream = stream,
+                FileName = fileName,
+                RootGroup = rootGroup
+            };
+
+            return fileModel;
+        }
+
+        /// <summary>
         /// Convert Group information to Hdf5Group
         /// </summary>
         /// <param name="iH5Group">PureHDF Group interface</param>

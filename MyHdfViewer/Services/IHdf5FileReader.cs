@@ -9,10 +9,19 @@ namespace MyHdfViewer.Services
     public interface IHdf5FileReader
     {
         /// <summary>
-        /// Return Hdf5FileModel from MemoryStream HDF5 File
+        /// Return Hdf5FileModel from MemoryStream HDF5 file
         /// </summary>
-        /// <param name="fileName">Name of HDF5 File</param>
+        /// <param name="stream">MemoryStream of HDF5 file</param>
+        /// <param name="fileName">name of HDF5 file</param>
         /// <returns>Hdf5FileModel</returns>
         Hdf5FileModel ReadHdf5FromStream(MemoryStream stream, string fileName);
+
+        /// <summary>
+        /// Return Hdf5FileModel from temporary file
+        /// </summary>
+        /// <param name="path">path of HDF5 temporary file</param>
+        /// <param name="fileName">name of HDF5 file</param>
+        /// <returns>Hdf5FileModel</returns>
+        Hdf5FileModel ReadHdf5FromTempFile(string path, string fileName);
     }
 }
