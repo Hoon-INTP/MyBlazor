@@ -8,74 +8,68 @@
 @using Microsoft.FluentUI.AspNetCore.Components
 @using MyHdfViewer.Components.TreeView
 
-@inject IHdf5FileReader Hdf5Reader
+@inject IHdf5FileReader IHdf5Reader
 
-<h3>HDF5 파일 뷰어</h3>
+<h3>HDF5 Viewer</h3>
 
-<div>
-    <FluentDivider Style="height: 100%;" Role="DividerRole.Separator" Orientation="Orientation.Horizontal"></FluentDivider>
-</div>
+<FluentDivider Style="width: 100%;" Role="DividerRole.Separator" Orientation="Orientation.Horizontal"></FluentDivider>
 
-<div class="row mt-3">
-    <div class="col-md-6">
-        <FluentCard>
-            <div class="card-header">
-                <h5>파일 선택</h5>
-            </div>
+<FluentStack Orientation="Orientation.Vertical"
+    HorizontalAlignment="HorizontalAlignment.Stretch"
+    VerticalAlignment="VerticalAlignment.Center">
 
-            <div>
-                <FluentDivider Style="height: 100%;" Role="DividerRole.Separator" Orientation="Orientation.Horizontal"></FluentDivider>
-            </div>
+    <FluentCard>
+        <FluentStack style="width: 100%"
+            Orientation="Orientation.Vertical"
+            HorizontalAlignment="HorizontalAlignment.Stretch"
+            VerticalAlignment="VerticalAlignment.Center">
 
-            <div class="card-body">
-                @* <InputFile OnChange="@LoadFile1" accept=".h5,.hdf5" multiple="false"/> *@
-                <FluentInputFile @ref="@selectedFileStream"
-                    AnchorId="MyUploadStream"
-                    DragDropZoneVisible="false"
-                    Mode="InputFileMode.Stream"
-                    Multiple="false"
-                    MaximumFileSize="@(20 * 1024 * 1024)"
-                    Accept=".h5, .hdf5"
-                    OnFileUploaded="@OnFileUploadedAsync"
-                    OnCompleted="@OnCompleted" />
+            <FluentInputFile @ref="@selectedFileStream"
+                AnchorId="MyUploadStream"
+                DragDropZoneVisible="false"
+                Mode="InputFileMode.Stream"
+                Multiple="false"
+                MaximumFileSize="@(20 * 1024 * 1024)"
+                Accept=".h5, .hdf5"
+                OnFileUploaded="@OnFileUploadedAsync"
+                OnCompleted="@OnCompleted" />
 
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <div class="alert alert-danger mt-3">
-                        @errorMessage
-                    </div>
-                }
+            <FluentStack Orientation="Orientation.Horizontal"
+                    HorizontalAlignment="HorizontalAlignment.Left"
+                    VerticalAlignment="VerticalAlignment.Center"
+                    HorizontalGap="30">
 
-                <FluentStack Orientation="Orientation.Horizontal"
-                        HorizontalAlignment="HorizontalAlignment.Left"
-                        VerticalAlignment="VerticalAlignment.Center"
-                        HorizontalGap="4"
-                        style="margin-top: 1rem;">
-                    <FluentButton Appearance="Appearance.Accent" Id="MyUploadStream">
-                        Upload files
-                    </FluentButton>
-                    <FluentTextField @bind-Value=currFile ReadOnly="true"></FluentTextField>
-                </FluentStack>
+                <FluentButton Appearance="Appearance.Accent" Id="MyUploadStream">Upload files</FluentButton>
+                <FluentTextField @bind-Value=currFile ReadOnly="true" style="width: 100%;"></FluentTextField>
+            </FluentStack>
 
-                @if (isLoading)
-                {
-                    <div class="spinner-border text-primary mt-3" role="status">
-                        <span class="visually-hidden">로딩 중...</span>
-                    </div>
-                }
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger mt-3">
+                    @errorMessage
+                </div>
+            }
 
-                @if(currFile != prevFile)
-                {
-                    Console.WriteLine($"File has Changed {prevFile} to {currFile}");
-                    prevFile = currFile;
-                }
-            </div>
-        </FluentCard>
-    </div>
+            @if(currFile != prevFile)
+            {
+                Console.WriteLine($"File has Changed [{prevFile}] to [{currFile}]");
+                prevFile = currFile;
+            }
 
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card-body">
+        </FluentStack>
+    </FluentCard>
+
+    <FluentStack Orientation="Orientation.Horizontal"
+        HorizontalAlignment="HorizontalAlignment.Left"
+        VerticalAlignment="VerticalAlignment.Top">
+            @if (isLoading)
+            {
+                <div class="spinner-border text-primary mt-3" role="status">
+                    <span class="visually-hidden">로딩 중...</span>
+                </div>
+            }
+            else
+            {
                 @if (fileModel != null)
                 {
                     <Hdf5TreeView FileModel="@fileModel" SelectedNode="@selectedNode" OnNodeSelected="@SelectNode" />
@@ -86,25 +80,19 @@
                         <p>Select File first.</p>
                     </div>
                 }
-            </div>
-        </div>
 
-        <div class="col-md-6">
-            <div class="card-body">
                 @if (selectedNode != null)
                 {
                     <Hdf5NodeAttrView Node="@selectedNode" />
                 }
-                else{
-                    <div class="alert alert-info mt-3">
-                        <p>Select a node first.</p>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
+                else
+                {
 
-</div>
+                }
+            }
+
+        </FluentStack>
+</FluentStack>
 
 @code {
     private Hdf5FileModel? fileModel;
@@ -180,7 +168,7 @@
 
                 Console.WriteLine($"File Loaded [Name: {file.Name}], [Size: {memoryStream.Length / 1024}KB], [Elapsed Time: {stopwatch.ElapsedMilliseconds}ms]");
 
-                fileModel = Hdf5Reader.ReadHdf5FromStream(memoryStream, file.Name);
+                fileModel = IHdf5Reader.ReadHdf5FromStream(memoryStream, file.Name);
                 selectedNode = fileModel.RootGroup;
 
                 //Console.WriteLine($"{fileModel.PrintAllNodes(fileModel.RootGroup)}");
@@ -207,73 +195,7 @@
     {
         if (!dataset.IsDataLoaded)
         {
-            //Hdf5Reader.LoadDatasetData(dataset);
-        }
-    }
-
-    private RenderFragment RenderNode(Hdf5Node node) => builder =>
-    {
-        builder.OpenElement(0, "div");
-        builder.AddAttribute(1, "class", "node");
-
-        // 노드 자체를 렌더링
-        builder.OpenElement(2, "div");
-        builder.AddAttribute(3, "class", "node-label");
-        builder.AddAttribute(4, "onclick", EventCallback.Factory.Create<MouseEventArgs>(this, () => SelectNode(node)));
-
-        // 노드 타입에 따른 아이콘
-        builder.OpenElement(5, "span");
-        switch (node.NodeType)
-        {
-            case Hdf5NodeType.Group:
-                builder.AddAttribute(6, "class", "oi oi-folder");
-                break;
-            case Hdf5NodeType.Dataset:
-                builder.AddAttribute(6, "class", "oi oi-file");
-                break;
-            default:
-                builder.AddAttribute(6, "class", "oi oi-question-mark");
-                break;
-        }
-        builder.CloseElement(); // 아이콘 span
-
-        builder.OpenElement(7, "span");
-        builder.AddContent(8, $" {node.Name}");
-        builder.CloseElement(); // 이름 span
-
-        builder.CloseElement(); // node-label
-
-        // 자식 노드가 있는 경우 재귀적으로 렌더링
-        if (node is Hdf5Group group && group.Children.Any())
-        {
-            builder.OpenElement(9, "div");
-            builder.AddAttribute(10, "class", "node-children");
-            builder.AddAttribute(11, "style", "margin-left: 20px;");
-
-            foreach (var child in group.Children)
-            {
-                builder.AddContent(12, RenderNode(child));
-            }
-
-            builder.CloseElement(); // node-children
-        }
-
-        builder.CloseElement(); // node
-    };
-
-    // 컴포넌트가 해제될 때 임시 파일 삭제
-    public void Dispose()
-    {
-        //if (!string.IsNullOrEmpty(tempFilePath) && File.Exists(tempFilePath))
-        {
-            try
-            {
-                //File.Delete(tempFilePath);
-            }
-            catch
-            {
-                // 파일 삭제 실패 시 무시
-            }
+            //IHdf5Reader.LoadDatasetData(dataset);
         }
     }
 
@@ -282,6 +204,9 @@
         try
         {
             isLoading = true;
+            errorMessage = null;
+            fileModel = null;
+            selectedNode = null;
 
             var stopwatch = Stopwatch.StartNew();
 
@@ -305,9 +230,10 @@
             await using FileStream fs = new(localFile, FileMode.Create);
             await file.Stream!.CopyToAsync(fs);
             await file.Stream!.DisposeAsync();
+
             stopwatch.Stop();
 
-            fileModel = Hdf5Reader.ReadHdf5FromTempFile(localFile, currFile);
+            fileModel = IHdf5Reader.ReadHdf5FromTempFile(localFile, currFile);
             selectedNode = fileModel.RootGroup;
 
             Console.WriteLine($"File Loaded [Name: {currFile}], [Size: {file.Size / 1024}KB], [Elapsed Time: {stopwatch.ElapsedMilliseconds}ms]");

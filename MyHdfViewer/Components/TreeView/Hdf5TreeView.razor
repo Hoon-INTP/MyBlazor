@@ -1,22 +1,26 @@
 @using MyHdfViewer.Models
 @using Microsoft.FluentUI.AspNetCore.Components
 
-<div class="card mt-3">
 <FluentCard>
-    <div class="card-header">
-        <h5>파일 구조</h5>
-    </div>
-    <div class="card-body">
-        <div class="mb-3">
-            <strong>파일명:</strong> @FileModel.FileName
-        </div>
+    <FluentStack Orientation="Orientation.Vertical"
+        HorizontalAlignment="HorizontalAlignment.Stretch"
+        VerticalAlignment="VerticalAlignment.Center"
+        HorizontalGap="4">
 
-        <div class="tree-view">
-            @RenderNode(FileModel.RootGroup)
+        <div class="card-body">
+            <div class="mb-3">
+                <strong>File:</strong> @FileModel.FileName
+            </div>
+
+            <FluentTreeView Items="@TreeItems" @bind-SelectedItem:get="@SelectedItem" @bind-SelectedItem:set="@OnSelectedItemChanged" LazyLoadItems="true">
+                <ItemTemplate>
+                    @context.Text
+                </ItemTemplate>
+            </FluentTreeView>
+
         </div>
-    </div>
+    </FluentStack>
 </FluentCard>
-</div>
 
 @code {
     [Parameter]
@@ -28,53 +32,76 @@
     [Parameter]
     public EventCallback<Hdf5Node> OnNodeSelected { get; set; }
 
-    private RenderFragment RenderNode(Hdf5Node node) => builder =>
+    private ITreeViewItem? SelectedItem;
+    private IEnumerable<ITreeViewItem>? TreeItems = new List<ITreeViewItem>();
+
+    private Dictionary<ITreeViewItem, Hdf5Node> TreeItemToNodeMap = new Dictionary<ITreeViewItem, Hdf5Node>();
+
+    private Icon FileCollapsed = new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size20.Folder();
+    private Icon FileExpanded = new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size20.FolderOpen();
+    private Icon DataExpanded = new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size20.DocumentText();
+
+    protected override void OnInitialized()
     {
-        builder.OpenElement(0, "div");
-        builder.AddAttribute(1, "class", "node");
+        TreeItemToNodeMap.Clear();
 
-        // 노드 자체를 렌더링
-        builder.OpenElement(2, "div");
-        builder.AddAttribute(3, "class", "node-label");
-        builder.AddAttribute(4, "onclick", EventCallback.Factory.Create<MouseEventArgs>(this, async () => await OnNodeSelected.InvokeAsync(node)));
+        var rootTreeItem = CreateTree(FileModel.RootGroup);
 
-        // 노드 타입에 따른 아이콘
-        builder.OpenElement(5, "span");
-        switch (node.NodeType)
+        TreeItems = new List<ITreeViewItem> { rootTreeItem };
+        SelectedItem = rootTreeItem;
+
+        //TreeItems = rootTreeItem.Items;
+
+        SelectedItem = TreeItems?.ElementAt(0);
+
+        if (SelectedItem != null && TreeItemToNodeMap.TryGetValue(SelectedItem, out var node))
         {
-            case Hdf5NodeType.Group:
-                builder.AddAttribute(6, "class", "oi oi-folder");
-                break;
-            case Hdf5NodeType.Dataset:
-                builder.AddAttribute(6, "class", "oi oi-file");
-                break;
-            default:
-                builder.AddAttribute(6, "class", "oi oi-question-mark");
-                break;
+            OnNodeSelected.InvokeAsync(node);
         }
-        builder.CloseElement(); // 아이콘 span
+    }
 
-        builder.OpenElement(7, "span");
-        builder.AddContent(8, $" {node.Name}");
-        builder.CloseElement(); // 이름 span
+    private TreeViewItem CreateTree(Hdf5Node node)
+    {
+        var treeItem = new TreeViewItem();
 
-        builder.CloseElement(); // node-label
+        treeItem.Text = $"{node.Name}";
 
-        // 자식 노드가 있는 경우 재귀적으로 렌더링
+        if( node.NodeType == Hdf5NodeType.Dataset )
+        {
+            treeItem.IconCollapsed = DataExpanded;
+            treeItem.IconExpanded =  DataExpanded;
+        }
+        else
+        {
+            treeItem.IconCollapsed = FileCollapsed;
+            treeItem.IconExpanded =  FileExpanded;
+        }
+
+        TreeItemToNodeMap[treeItem] = node;
+
         if (node is Hdf5Group group && group.Children.Any())
         {
-            builder.OpenElement(9, "div");
-            builder.AddAttribute(10, "class", "node-children");
-            builder.AddAttribute(11, "style", "margin-left: 20px;");
+            var childItems = new List<ITreeViewItem>();
 
             foreach (var child in group.Children)
             {
-                builder.AddContent(12, RenderNode(child));
+                childItems. Add(CreateTree(child));
             }
 
-            builder.CloseElement(); // node-children
+            treeItem.Items = childItems;
         }
 
-        builder.CloseElement(); // node
-    };
+        return treeItem;
+    }
+
+    private async Task OnSelectedItemChanged(ITreeViewItem? newValue)
+    {
+        SelectedItem = newValue;
+
+        if (newValue != null && TreeItemToNodeMap.TryGetValue(newValue, out var node))
+        {
+            // Call the callback with the selected node
+            await OnNodeSelected.InvokeAsync(node);
+        }
+    }
 }

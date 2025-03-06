@@ -1,17 +1,28 @@
 @using MyHdfViewer.Models
 @using Microsoft.FluentUI.AspNetCore.Components
 
-
-<div class="card mt-3">
-    <div class="card-header">
-        <h5>노드 정보</h5>
-    </div>
-
+<FluentCard>
+    <FluentStack Orientation="Orientation.Vertical"
+        HorizontalAlignment="HorizontalAlignment.Stretch"
+        VerticalAlignment="VerticalAlignment.Center"
+        HorizontalGap="4">
     <div class="card-body">
-        <h6>@Node.Name</h6>
-
         @if (Node is Hdf5Dataset dataset)
         {
+            @if (Node.Attributes.Any())
+            {
+                <h6>Attribute</h6>
+
+                <FluentDataGrid Items="@NodeAttributes">
+                    <PropertyColumn Property="@(n => n.Name)" style="width: 100%;" />
+                    <PropertyColumn Property="@(n => n.Value)" style="width: 100%;" />
+                </FluentDataGrid>
+            }
+            else
+            {
+                <h6>No Attribute</h6>
+            }
+
             <p><strong>Type:</strong> @dataset.DataType</p>
             <p><strong>Rank:</strong> @(dataset.Dimensions.Length.ToString())</p>
             <p><strong>Size:</strong> @(string.Join(" x ", dataset.Dimensions))</p>
@@ -30,48 +41,44 @@
             }
             else
             {
-                <button class="btn btn-sm btn-primary" @onclick="() => LoadDataset()">데이터 로드</button>
+                //<button class="btn btn-sm btn-primary" @onclick="() => LoadDataset()">데이터 로드</button>
             }
         }
 
-        @if (Node.Attributes.Any())
-        {
-            <div class="mt-4">
-                <h6>속성</h6>
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>이름</th>
-                            <th>값</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var attr in Node.Attributes)
-                        {
-                            <tr>
-                                <td>@attr.Name</td>
-                                <td>@attr.Value</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
+
+
     </div>
-</div>
+    </FluentStack>
+</FluentCard>
 
 @code {
     [Parameter]
     public Hdf5Node Node { get; set; } = null!;
 
-    private async Task LoadDataset()
+    record NodeAttribute(string Name, string Value);
+
+    IQueryable<NodeAttribute> NodeAttributes =>GetNodeAttributes();
+
+    private IQueryable<NodeAttribute> GetNodeAttributes()
     {
-        if (Node is Hdf5Dataset dataset && dataset.Data == null)
+        var attributes = new List<NodeAttribute>();
+
+        foreach (var attr in Node.Attributes)
         {
-            // Implement dataset loading logic here
-            // For example:
-            // await dataset.LoadDataAsync();
-            // StateHasChanged();
+            attributes.Add(new NodeAttribute(attr.Name, attr.Value.ToString() ?? ""));
         }
+
+        return attributes.AsQueryable();
     }
+
+    //private async Task LoadDataset()
+    //{
+    //    if (Node is Hdf5Dataset dataset && dataset.Data == null)
+    //    {
+    //        // Implement dataset loading logic here
+    //        // For example:
+    //        // await dataset.LoadDataAsync();
+    //        // StateHasChanged();
+    //    }
+    //}
 }
