@@ -1,7 +1,13 @@
 @using MyHdfViewer.Models
 @using Microsoft.FluentUI.AspNetCore.Components
 
-@if (Node is Hdf5Dataset dataset)
+@if (IsLoading)
+{
+    <div class="loading-container">
+        <FluentProgressRing />
+    </div>
+}
+else if (Node is Hdf5Dataset dataset)
 {
     <div style="margin-top: 1rem;">
         <p>
@@ -12,7 +18,6 @@
         @if (GridItems != null && GridItems.Any())
         {
             <FluentDataGrid Items="@GridItems" GridTemplateColumns="1fr 1fr" Class="hdf5-data-grid">
-                @* <PropertyColumn Property="@(item => item.Index)" Title="Index" /> *@
                 <PropertyColumn Property="@(item => item.Value)" Title="Value" />
             </FluentDataGrid>
         }
@@ -34,15 +39,8 @@ else if (Node is Hdf5Group group)
         {
             <div>
                 <p><strong>Datasets in Group</strong></p>
-                @{
-                var datasets = GetGroupDatasets();
-                var dataValues = GetGroupDataValues();
-                }
 
-                @* <FluentDataGrid Items="@GroupDataValues" ResizableColumns="true"> *@
-                @* <FluentDataGrid Items="@GroupDataValues" ResizableColumns="true" Style="overflow-x: auto; width: 100%;"> *@
-
-                @if (datasets.Any() && dataValues != null)
+                @if (datasets != null && datasets.Any() && dataValues != null)
                 {
                     <FluentDataGrid Items="@dataValues" Class="hdf5-data-grid">
                         @foreach (var dataset in datasets)
@@ -51,7 +49,7 @@ else if (Node is Hdf5Group group)
                         }
                     </FluentDataGrid>
                 }
-                else if(datasets.Any() && dataValues == null)
+                else if (datasets != null && datasets.Any() && dataValues == null)
                 {
                     <p>No datasets with data found</p>
                 }
@@ -75,14 +73,16 @@ else if (Node is Hdf5Group group)
 
     private Hdf5Node? oldNode;
 
+    private bool IsLoading = false;
+
     private record DataItem(int Index, string Value);
     private IQueryable<DataItem>? GridItems => GetGridItems();
 
     private record DatasetInfo(string Name, Hdf5Dataset Dataset);
-    private List<DatasetInfo>? GroupDatasets;
+    private List<DatasetInfo>? datasets;
 
     private record DataRowItem(int RowIndex, Dictionary<string, string> Values);
-    private IQueryable<DataRowItem>? GroupDataValues;
+    private IQueryable<DataRowItem>? dataValues;
 
     private IQueryable<DataItem>? GetGridItems()
     {
@@ -142,112 +142,119 @@ else if (Node is Hdf5Group group)
         return items.AsQueryable();
     }
 
-    private List<DatasetInfo> GetGroupDatasets()
+    private async Task<List<DatasetInfo>> GetGroupDatasetsAsync()
     {
-        if (GroupDatasets == null)
-        {
-            GroupDatasets = new List<DatasetInfo>();
+        var result = new List<DatasetInfo>();
 
-            if (Node is Hdf5Group group)
+        if (Node is Hdf5Group group)
+        {
+            await Task.Run(() =>
             {
                 foreach (var child in group.Children)
                 {
                     if (child is Hdf5Dataset dataset)
                     {
-                        GroupDatasets.Add(new DatasetInfo(dataset.Name, dataset));
+                        result.Add(new DatasetInfo(dataset.Name, dataset));
                     }
                 }
-            }
+            });
         }
 
-        return GroupDatasets;
+        return result;
     }
 
-    private IQueryable<DataRowItem>? GetGroupDataValues()
+    private async Task<IQueryable<DataRowItem>?> GetGroupDataValuesAsync()
     {
-        if (oldNode == Node && GroupDataValues != null)
-        {
-            return GroupDataValues;
-        }
-
         if (Node is not Hdf5Group group)
         {
-            GroupDataValues = null;
-            oldNode = Node;
             return null;
         }
 
-        var datasets = GetGroupDatasets();
-        if (datasets.Count == 0)
+        if (datasets == null || !datasets.Any())
         {
-            GroupDataValues = null;
-            oldNode = Node;
             return null;
         }
 
-        int maxRows = 0;
-        foreach (var datasetInfo in datasets)
+        return await Task.Run(() =>
         {
-            var dataset = datasetInfo.Dataset;
-            if (dataset.Data != null)
-            {
-                var dataArray = dataset.GetDataArray();
-                if (dataArray != null)
-                {
-                    maxRows = Math.Max(maxRows, dataArray.Length);
-                }
-            }
-        }
-
-        if (maxRows == 0)
-        {
-            GroupDataValues = null;
-            oldNode = Node;
-            return null;
-        }
-
-        var rows = new List<DataRowItem>();
-        for (int i = 0; i < maxRows; i++)
-        {
-            var values = new Dictionary<string, string>();
-
+            int maxRows = 0;
             foreach (var datasetInfo in datasets)
             {
                 var dataset = datasetInfo.Dataset;
-                string value = "N/A";
-
                 if (dataset.Data != null)
                 {
                     var dataArray = dataset.GetDataArray();
-                    if (dataArray != null && i < dataArray.Length)
+                    if (dataArray != null)
                     {
-                        var dataValue = dataArray.GetValue(i);
-                        value = dataValue?.ToString() ?? "null";
+                        maxRows = Math.Max(maxRows, dataArray.Length);
                     }
                 }
-
-                values[datasetInfo.Name] = value;
             }
 
-            rows.Add(new DataRowItem(i, values));
-        }
+            if (maxRows == 0)
+            {
+                return null;
+            }
 
-        GroupDataValues = rows.AsQueryable();
-        oldNode = Node;
+            var rows = new List<DataRowItem>();
+            for (int i = 0; i < maxRows; i++)
+            {
+                var values = new Dictionary<string, string>();
 
-        return GroupDataValues;
+                foreach (var datasetInfo in datasets)
+                {
+                    var dataset = datasetInfo.Dataset;
+                    string value = "N/A";
+
+                    if (dataset.Data != null)
+                    {
+                        var dataArray = dataset.GetDataArray();
+                        if (dataArray != null && i < dataArray.Length)
+                        {
+                            var dataValue = dataArray.GetValue(i);
+                            value = dataValue?.ToString() ?? "null";
+                        }
+                    }
+
+                    values[datasetInfo.Name] = value;
+                }
+
+                rows.Add(new DataRowItem(i, values));
+            }
+
+            return rows.AsQueryable();
+        });
     }
 
     protected override async Task OnParametersSetAsync()
     {
         if (Node != oldNode)
         {
-            oldNode = Node;
+            try
+            {
+                IsLoading = true;
+                StateHasChanged();
 
-            GroupDatasets = null;
-            GroupDataValues = null;
+                datasets = null;
+                dataValues = null;
+                oldNode = Node;
 
-            await InvokeAsync(StateHasChanged);
+                if (Node is Hdf5Group)
+                {
+                    datasets = await GetGroupDatasetsAsync();
+                    dataValues = await GetGroupDataValuesAsync();
+                }
+            }
+            finally
+            {
+                IsLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
     }
 }

@@ -1,40 +1,43 @@
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
 .hdf5-data-grid {
     overflow-x: visible;
     width: 100%;
 }
 
-/* 데이터 셀 스타일 수정 */
 .hdf5-data-grid ::deep .fluent-data-grid-cell {
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
     min-width: 100%;
-    max-width: none !important;  /* 최대 너비 제한 제거 */
+    max-width: none !important;
 }
 
-/* 컬럼 스타일 수정 */
 .hdf5-data-grid ::deep .fluent-data-grid-column {
     min-width: 200px;
     width: auto;
-    max-width: none !important;  /* 최대 너비 제한 제거 */
+    max-width: none !important;
 }
 
-/* 헤더 셀 스타일 수정 */
 .hdf5-data-grid ::deep .fluent-data-grid-header-cell {
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
     min-width: 100%;
-    max-width: none !important;  /* 최대 너비 제한 제거 */
-}
-
-/* 컬럼 제목 스타일 추가 */
-.hdf5-data-grid ::deep .col-title {
-    width: 100% !important;  /* 인라인 스타일 덮어쓰기 */
     max-width: none !important;
 }
 
-/* 컬럼 제목 텍스트 스타일 추가 */
+.hdf5-data-grid ::deep .col-title {
+    width: 100% !important;
+    max-width: none !important;
+}
+
 .hdf5-data-grid ::deep .col-title-text {
     width: auto !important;
     max-width: none !important;

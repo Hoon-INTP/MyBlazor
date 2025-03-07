@@ -8,6 +8,7 @@
 @using Microsoft.FluentUI.AspNetCore.Components
 @using MyHdfViewer.Components.TreeView
 @using MyHdfViewer.Components.DataTable
+@using MyHdfViewer.Components.DataChart
 
 @inject IHdf5FileReader IHdf5Reader
 
@@ -65,8 +66,8 @@
         VerticalAlignment="VerticalAlignment.Top">
             @if (isLoading)
             {
-                <div class="spinner-border text-primary mt-3" role="status">
-                    <span class="visually-hidden">로딩 중...</span>
+                <div class="loading-container">
+                    <FluentProgressRing />
                 </div>
             }
             else
@@ -86,9 +87,42 @@
 
                 @if (selectedNode != null)
                 {
-                    <FluentCard>
-                        <Hdf5NodeAttrView Node="@selectedNode" />
-                        <Hdf5DataTable Node="@selectedNode" />
+                    <FluentCard style="min-height: 300px;">
+                        <div style="display: flex; width=100%">
+                            <FluentButton id="BtnAttrShow" Appearance="Appearance.Outline" @onclick="() => visibleAttribute = !visibleAttribute">
+                                Show Attribute
+                            </FluentButton>
+
+                            <FluentPopover Style="width: 100%;" AnchorId="BtnAttrShow" @bind-Open="visibleAttribute" AutoFocus="false">
+                                <Body>
+                                    <Hdf5NodeAttrView Node="@selectedNode" />
+                                </Body>
+                            </FluentPopover>
+                        </div>
+
+                        <FluentTabs>
+                            <FluentTab Id="DataGrid">
+                                <Header>
+                                    <FluentIcon Value="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size20.Table())" />
+                                    Data Grid
+                                </Header>
+
+                                <Content>
+                                    <Hdf5DataTable Node="@selectedNode" />
+                                </Content>
+                            </FluentTab>
+
+                             <FluentTab Id="DataChart">
+                                <Header>
+                                    <FluentIcon Value="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size20.DataArea())"/>
+                                    Data Chart
+                                </Header>
+
+                                <Content>
+                                    <Hdf5DataChart CurrFile="@selectedFile" />
+                                </Content>
+                            </FluentTab>
+                        </FluentTabs>
                     </FluentCard>
                 }
                 else
@@ -103,8 +137,11 @@
 @code {
     private Hdf5FileModel? fileModel;
     private Hdf5Node? selectedNode;
+    private Hdf5FileModel? selectedFile => fileModel;
     private string? errorMessage;
     private bool isLoading;
+
+    private bool visibleAttribute;
 
     //private IBrowserFile? currFile; // For MemoryStream
     //private IBrowserFile? prevFile; // For MemoryStream
@@ -231,7 +268,7 @@
 
             Files.Add(localFile);
 
-            Console.WriteLine($"Temp File path{localFile}");
+            Console.WriteLine($"Temp File path : [{localFile}]");
 
             await using FileStream fs = new(localFile, FileMode.Create);
             await file.Stream!.CopyToAsync(fs);
