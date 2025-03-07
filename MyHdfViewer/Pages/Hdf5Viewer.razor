@@ -7,19 +7,20 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.FluentUI.AspNetCore.Components
 @using MyHdfViewer.Components.TreeView
+@using MyHdfViewer.Components.DataTable
 
 @inject IHdf5FileReader IHdf5Reader
 
 <h3>HDF5 Viewer</h3>
 
-<FluentDivider Style="width: 100%;" Role="DividerRole.Separator" Orientation="Orientation.Horizontal"></FluentDivider>
+<FluentDivider Style="width: 100%; margin-bottom: 0.5rem;" Role="DividerRole.Separator" Orientation="Orientation.Horizontal"></FluentDivider>
 
 <FluentStack Orientation="Orientation.Vertical"
     HorizontalAlignment="HorizontalAlignment.Stretch"
     VerticalAlignment="VerticalAlignment.Center">
 
     <FluentCard>
-        <FluentStack style="width: 100%"
+        <FluentStack style="width: 100%; min-width: 800px;"
             Orientation="Orientation.Vertical"
             HorizontalAlignment="HorizontalAlignment.Stretch"
             VerticalAlignment="VerticalAlignment.Center">
@@ -72,7 +73,9 @@
             {
                 @if (fileModel != null)
                 {
-                    <Hdf5TreeView FileModel="@fileModel" SelectedNode="@selectedNode" OnNodeSelected="@SelectNode" />
+                    <FluentCard style="max-width: 300px; width: auto;">
+                        <Hdf5TreeView FileModel="@fileModel" SelectedNode="@selectedNode" OnNodeSelected="@SelectNode" />
+                    </FluentCard>
                 }
                 else
                 {
@@ -83,7 +86,10 @@
 
                 @if (selectedNode != null)
                 {
-                    <Hdf5NodeAttrView Node="@selectedNode" />
+                    <FluentCard>
+                        <Hdf5NodeAttrView Node="@selectedNode" />
+                        <Hdf5DataTable Node="@selectedNode" />
+                    </FluentCard>
                 }
                 else
                 {
