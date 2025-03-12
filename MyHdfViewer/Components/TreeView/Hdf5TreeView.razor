@@ -1,23 +1,23 @@
 @using MyHdfViewer.Models
 @using Microsoft.FluentUI.AspNetCore.Components
 
-
 <FluentStack Orientation="Orientation.Vertical"
     HorizontalAlignment="HorizontalAlignment.Stretch"
     VerticalAlignment="VerticalAlignment.Center"
     HorizontalGap="4">
 
     <div class="card-body">
-        <div class="mb-3">
+        <div class="file-info">
             <strong>File:</strong> @FileModel.FileName
         </div>
 
-        <FluentTreeView Items="@TreeItems" @bind-SelectedItem:get="@SelectedItem" @bind-SelectedItem:set="@OnSelectedItemChanged" LazyLoadItems="true">
-            <ItemTemplate>
-                @context.Text
-            </ItemTemplate>
-        </FluentTreeView>
-
+        <div class="tree-container">
+            <FluentTreeView Items="@TreeItems" @bind-SelectedItem:get="@SelectedItem" @bind-SelectedItem:set="@OnSelectedItemChanged" LazyLoadItems="true">
+                <ItemTemplate>
+                    @context.Text
+                </ItemTemplate>
+            </FluentTreeView>
+        </div>
     </div>
 </FluentStack>
 

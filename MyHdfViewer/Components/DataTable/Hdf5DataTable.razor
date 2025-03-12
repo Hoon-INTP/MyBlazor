@@ -17,9 +17,11 @@ else if (Node is Hdf5Dataset dataset)
 
         @if (GridItems != null && GridItems.Any())
         {
-            <FluentDataGrid Items="@GridItems" GridTemplateColumns="1fr 1fr" Class="hdf5-data-grid">
-                <PropertyColumn Property="@(item => item.Value)" Title="Value" />
-            </FluentDataGrid>
+            <div class="table-container">
+                <FluentDataGrid Items="@GridItems" GridTemplateColumns="1fr 1fr" Class="hdf5-data-grid table-fixed-header">
+                    <PropertyColumn Property="@(item => item.Value)" Title="Value" />
+                </FluentDataGrid>
+            </div>
         }
         else
         {
@@ -38,16 +40,16 @@ else if (Node is Hdf5Group group)
         @if (group.Children.Any())
         {
             <div>
-                <p><strong>Datasets in Group</strong></p>
-
                 @if (datasets != null && datasets.Any() && dataValues != null)
                 {
-                    <FluentDataGrid Items="@dataValues" Class="hdf5-data-grid">
-                        @foreach (var dataset in datasets)
-                        {
-                            <PropertyColumn Property="@(item => item.Values[dataset.Name])" Title="@dataset.Name" Tooltip="true" />
-                        }
-                    </FluentDataGrid>
+                    <div class="table-container">
+                        <FluentDataGrid Items="@dataValues" Class="hdf5-data-grid table-fixed-header">
+                            @foreach (var dataset in datasets)
+                            {
+                                <PropertyColumn Property="@(item => item.Values[dataset.Name])" Title="@dataset.Name" Tooltip="true" />
+                            }
+                        </FluentDataGrid>
+                    </div>
                 }
                 else if (datasets != null && datasets.Any() && dataValues == null)
                 {

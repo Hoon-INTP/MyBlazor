@@ -1,0 +1,89 @@
+/* Hdf5DataChart.razor.css */
+
+.chart-container {
+    width: 100%;
+    height: 100%;
+    padding: 12px;
+    background-color: transparent;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.dataset-selector {
+    margin-bottom: 16px;
+}
+
+.dataset-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.chart-area {
+    flex: 1;
+    overflow: hidden;
+    min-height: 350px;
+    border-radius: var(--border-radius-medium, 4px);
+    border: 1px solid var(--neutral-stroke-rest, #d1d1d1);
+}
+
+/* MudBlazor 스타일 오버라이드 */
+::deep .mud-chip {
+    font-family: var(--body-font, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+::deep .mud-chip:hover {
+    transform: scale(1.05);
+}
+
+::deep .mud-chip-filled {
+    font-weight: 500;
+}
+
+::deep .mud-chip-outlined {
+    opacity: 0.7;
+}
+
+::deep .mud-typography {
+    font-family: var(--body-font, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+::deep .mud-paper {
+    border-radius: var(--border-radius-medium, 4px);
+}
+
+::deep .mud-alert {
+    border-radius: var(--border-radius-medium, 4px);
+}
+
+/* 차트 스타일 */
+::deep .mud-chart {
+    height: 100%;
+    width: 100%;
+}
+
+::deep .mud-chart-legend {
+    font-family: var(--body-font, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+::deep .mud-chart-tooltip {
+    font-family: var(--body-font, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+    border-radius: var(--border-radius-small, 2px);
+}

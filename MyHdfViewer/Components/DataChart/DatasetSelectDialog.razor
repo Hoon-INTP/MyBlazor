@@ -1,0 +1,131 @@
+@using MyHdfViewer.Models
+@using MudBlazor
+@using System.IO
+
+<MudDialog>
+    <DialogContent>
+        <MudContainer Style="max-height: 400px; overflow-y: auto;">
+            <MudText Class="mb-4">표시할 데이터셋을 선택하세요:</MudText>
+
+            <div class="dialog-actions">
+                <MudButton Variant="Variant.Text"
+                         Color="Color.Primary"
+                         OnClick="SelectAll">
+                    모두 선택
+                </MudButton>
+                <MudButton Variant="Variant.Text"
+                         Color="Color.Secondary"
+                         OnClick="UnselectAll">
+                    모두 해제
+                </MudButton>
+            </div>
+
+            <MudDivider Class="my-2" />
+
+            <MudList Clickable="true" Dense="true" T="Hdf5Dataset">
+                @foreach (var dataset in AvailableDatasets)
+                {
+                    bool isChecked = TempActiveDatasets.Contains(dataset.Path);
+                    <MudListItem Icon="@Icons.Material.Filled.DataObject"
+                               IconColor="@GetDatasetColor(dataset.Path)"
+                               OnClick="@(() => ToggleDataset(dataset.Path))">
+                        <div class="dataset-list-item">
+                            <MudCheckBox @bind-Checked="@isChecked"
+                                       Color="@GetDatasetColor(dataset.Path)"
+                                       Size="Size.Small"
+                                       Dense="true" />
+                            <span class="dataset-name">@GetDatasetDisplayName(dataset)</span>
+                        </div>
+                    </MudListItem>
+                }
+            </MudList>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                 Color="Color.Default"
+                 OnClick="Cancel">
+            취소
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                 Color="Color.Primary"
+                 OnClick="Confirm">
+            확인 (@TempActiveDatasets.Count)개 선택
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .dataset-list-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .dataset-name {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dialog-actions {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+</style>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public List<Hdf5Dataset> AvailableDatasets { get; set; } = new();
+    [Parameter] public HashSet<string> ActiveDatasets { get; set; } = new();
+    [Parameter] public Func<Hdf5Dataset, string> GetDatasetDisplayName { get; set; }
+    [Parameter] public Func<string, Color> GetDatasetColor { get; set; }
+
+    // 임시 활성화 상태 (확인 버튼 클릭 전까지는 적용되지 않음)
+    private HashSet<string> TempActiveDatasets = new();
+
+    protected override void OnInitialized()
+    {
+        // 초기 활성화 상태 복사
+        TempActiveDatasets = new HashSet<string>(ActiveDatasets);
+    }
+
+    private void ToggleDataset(string datasetPath)
+    {
+        if (TempActiveDatasets.Contains(datasetPath))
+        {
+            TempActiveDatasets.Remove(datasetPath);
+        }
+        else
+        {
+            TempActiveDatasets.Add(datasetPath);
+        }
+
+        StateHasChanged();
+    }
+
+    private void SelectAll()
+    {
+        TempActiveDatasets = new HashSet<string>(AvailableDatasets.Select(d => d.Path));
+        StateHasChanged();
+    }
+
+    private void UnselectAll()
+    {
+        TempActiveDatasets.Clear();
+        StateHasChanged();
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void Confirm()
+    {
+        MudDialog.Close(DialogResult.Ok(TempActiveDatasets));
+    }
+}

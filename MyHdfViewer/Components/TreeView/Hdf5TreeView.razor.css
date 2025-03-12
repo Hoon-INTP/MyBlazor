@@ -1,0 +1,47 @@
+/* Hdf5TreeView.razor.css */
+
+/* 트리뷰 컨테이너 스타일 */
+.tree-container {
+    max-height: 660px; /* 원하는 최대 높이 설정 */
+    overflow-y: auto; /* 세로 스크롤바 활성화 */
+    overflow-x: hidden; /* 가로 스크롤바 비활성화 */
+    padding-right: 4px; /* 스크롤바 공간 확보 */
+    width: 100%; /* 너비 100% */
+}
+
+/* 트리뷰 내부 항목 스타일 */
+container ::deep .fluent-tree-item {
+    padding: 4px 0;
+}
+
+/* 선택된 항목 스타일 강화 */
+container ::deep .fluent-tree-item[aria-selected="true"] {
+    background-color: var(--accent-fill-hover);
+    color: var(--foreground-on-accent-rest);
+    border-radius: 4px;
+}
+
+/* 파일 정보 스타일 */
+.file-info {
+    margin-bottom: 12px;
+    padding: 8px;
+    background-color: var(--neutral-layer-3);
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+/* 아이콘 스타일 */
+::deep .fluent-tree-item-icon {
+    margin-right: 6px;
+}
+
+/* 트리 아이템 hover 효과 */
+::deep .fluent-tree-item:hover {
+    background-color: var(--neutral-layer-hover);
+    border-radius: 4px;
+}
+
+/* 트리뷰 전체 스타일 */
+::deep .fluent-tree-view {
+    width: 100%;
+}
