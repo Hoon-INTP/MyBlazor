@@ -8,7 +8,7 @@
         HorizontalGap="4">
     <div class="card-body">
 
-        @if (Node.Attributes.Any())
+        @if (SelectedNode.Attributes.Any())
         {
             <h6>Attribute</h6>
 
@@ -29,16 +29,36 @@
 @code
 {
     [Parameter]
-    public Hdf5Node Node { get; set; } = null!;
+    public Hdf5Node SelectedNode { get; set; } = null!;
+    private Hdf5Node? oldSelectedNode;
 
     private record NodeAttribute(string Name, string Value);
-    private IQueryable<NodeAttribute> NodeAttributes =>GetNodeAttributes();
+    private IQueryable<NodeAttribute> NodeAttributes;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SelectedNode != oldSelectedNode)
+        {
+            try
+            {
+                StateHasChanged();
+
+                oldSelectedNode = SelectedNode;
+
+                NodeAttributes = GetNodeAttributes();
+            }
+            finally
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
 
     private IQueryable<NodeAttribute> GetNodeAttributes()
     {
         var attributes = new List<NodeAttribute>();
 
-        foreach (var attr in Node.Attributes)
+        foreach (var attr in SelectedNode.Attributes)
         {
             attributes.Add(new NodeAttribute(attr.Name, attr.Value.ToString() ?? ""));
         }

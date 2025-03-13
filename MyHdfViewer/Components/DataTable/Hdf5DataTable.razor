@@ -7,7 +7,7 @@
         <FluentProgressRing />
     </div>
 }
-else if (Node is Hdf5Dataset dataset)
+else if (SelectedNode is Hdf5Dataset dataset)
 {
     <div style="margin-top: 1rem;">
         <p>
@@ -29,7 +29,7 @@ else if (Node is Hdf5Dataset dataset)
         }
     </div>
 }
-else if (Node is Hdf5Group group)
+else if (SelectedNode is Hdf5Group group)
 {
     <div style="margin-top: 1rem;">
         <p>
@@ -71,9 +71,8 @@ else if (Node is Hdf5Group group)
 @code
 {
     [Parameter]
-    public Hdf5Node Node { get; set; } = null!;
-
-    private Hdf5Node? oldNode;
+    public Hdf5Node SelectedNode { get; set; } = null!;
+    private Hdf5Node? oldSelectedNode;
 
     private bool IsLoading = false;
 
@@ -88,7 +87,7 @@ else if (Node is Hdf5Group group)
 
     private IQueryable<DataItem>? GetGridItems()
     {
-        if (Node is not Hdf5Dataset dataset || dataset.Data == null)
+        if (SelectedNode is not Hdf5Dataset dataset || dataset.Data == null)
         {
             return null;
         }
@@ -148,7 +147,7 @@ else if (Node is Hdf5Group group)
     {
         var result = new List<DatasetInfo>();
 
-        if (Node is Hdf5Group group)
+        if (SelectedNode is Hdf5Group group)
         {
             await Task.Run(() =>
             {
@@ -167,7 +166,7 @@ else if (Node is Hdf5Group group)
 
     private async Task<IQueryable<DataRowItem>?> GetGroupDataValuesAsync()
     {
-        if (Node is not Hdf5Group group)
+        if (SelectedNode is not Hdf5Group group)
         {
             return null;
         }
@@ -230,7 +229,7 @@ else if (Node is Hdf5Group group)
 
     protected override async Task OnParametersSetAsync()
     {
-        if (Node != oldNode)
+        if (SelectedNode != oldSelectedNode)
         {
             try
             {
@@ -239,9 +238,9 @@ else if (Node is Hdf5Group group)
 
                 datasets = null;
                 dataValues = null;
-                oldNode = Node;
+                oldSelectedNode = SelectedNode;
 
-                if (Node is Hdf5Group)
+                if (SelectedNode is Hdf5Group)
                 {
                     datasets = await GetGroupDatasetsAsync();
                     dataValues = await GetGroupDataValuesAsync();

@@ -95,7 +95,7 @@
 
                             <FluentPopover Style="width: 100%;" AnchorId="BtnAttrShow" @bind-Open="visibleAttribute" AutoFocus="false">
                                 <Body>
-                                    <Hdf5NodeAttrView Node="@selectedNode" />
+                                    <Hdf5NodeAttrView SelectedNode="@selectedNode" />
                                 </Body>
                             </FluentPopover>
                         </div>
@@ -108,7 +108,7 @@
                                 </Header>
 
                                 <Content>
-                                    <Hdf5DataTable Node="@selectedNode" />
+                                    <Hdf5DataTable SelectedNode="@selectedNode" />
                                 </Content>
                             </FluentTab>
 

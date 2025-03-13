@@ -36,19 +36,13 @@
                     ChartSeries="@LineSeries"
                     XAxisLabels="@Labels"
                     Width="100%" Height="350px"
-                    ChartOptions="new ChartOptions {
-                        InterpolationOption = InterpolationOption.Straight
-                        }"/>
+                    ChartOptions="@LineChartOption"/>
         </MudPaper>
-
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2 px-2">
-            활성 데이터셋: @ActiveDatasets.Count / @AvailableDatasets.Count | 최대 포인트 수: @MaxDataPoints
-        </MudText>
     }
     else
     {
         <MudAlert Severity="Severity.Info" Class="my-4">
-            선택된 그룹에 차트로 표시할 수 있는 숫자 데이터셋이 없습니다.
+            No DataSet in Selected Group
         </MudAlert>
     }
 </div>
@@ -56,6 +50,7 @@
 @code {
     [Parameter]
     public Hdf5Node SelectedNode { get; set; } = null!;
+    private Hdf5Node? oldSelectedNode;
 
     private bool IsLoading = false;
     private string ErrorMessage = "";
@@ -64,6 +59,7 @@
     private HashSet<string> ActiveDatasets = new();
     private Dictionary<string, List<double>> DatasetValues = new();
     private string[] Labels = Array.Empty<string>();
+    private readonly ChartOptions LineChartOption = new();
 
     // 라인 차트 시리즈 데이터
     private List<ChartSeries> LineSeries = new();
@@ -74,14 +70,26 @@
         Color.Error, Color.Info, Color.Dark
     };
 
+    protected override void OnInitialized()
+    {
+        LineChartOption.YAxisTicks = 5;
+        LineChartOption.InterpolationOption = InterpolationOption.Straight;
+
+        StateHasChanged();
+    }
+
     protected override async Task OnParametersSetAsync()
     {
-        if (SelectedNode != null)
+        if (SelectedNode != null && SelectedNode != oldSelectedNode)
         {
+            oldSelectedNode = SelectedNode;
+
             ActiveDatasets.Clear();
             DatasetValues.Clear();
             await LoadAvailableDatasetsAsync();
         }
+
+        await base.OnParametersSetAsync();
     }
 
     private async Task LoadAvailableDatasetsAsync()
@@ -337,7 +345,7 @@
         }
 
         // 데이터 포인트 수에 따라 적절한 수의 라벨 생성
-        int labelCount = Math.Min(10, dataLength);
+        int labelCount = dataLength;
         if (labelCount <= 1)
         {
             Labels = new[] { "0" };
