@@ -12,7 +12,7 @@
         </div>
 
         <div class="tree-container">
-            <FluentTreeView Items="@TreeItems" @bind-SelectedItem:get="@SelectedItem" @bind-SelectedItem:set="@OnSelectedItemChanged" LazyLoadItems="true">
+            <FluentTreeView Items="@TreeItems" @bind-SelectedItem:get="@SelectedItem" @bind-SelectedItem:set="@OnSelectedItemChanged" LazyLoadItems="false">
                 <ItemTemplate>
                     @context.Text
                 </ItemTemplate>
@@ -96,12 +96,19 @@
 
     private async Task OnSelectedItemChanged(ITreeViewItem? newValue)
     {
-        SelectedItem = newValue;
-
-        if (newValue != null && TreeItemToNodeMap.TryGetValue(newValue, out var node))
+        if( null != newValue && SelectedItem != newValue)
         {
-            // Call the callback with the selected node
-            await OnNodeSelected.InvokeAsync(node);
+            SelectedItem = newValue;
+
+            if (newValue != null && TreeItemToNodeMap.TryGetValue(newValue, out var node))
+            {
+                // Call the callback with the selected node
+                await OnNodeSelected.InvokeAsync(node);
+            }
+        }
+        else
+        {
+
         }
     }
 }

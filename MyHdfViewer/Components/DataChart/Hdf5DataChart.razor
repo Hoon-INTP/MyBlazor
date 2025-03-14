@@ -4,13 +4,7 @@
 @using System.IO
 
 <div class="chart-container">
-    @if (IsLoading)
-    {
-        <div class="loading-overlay">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
-        </div>
-    }
-    else if (!string.IsNullOrEmpty(ErrorMessage))
+    @if (!string.IsNullOrEmpty(ErrorMessage))
     {
         <MudAlert Severity="Severity.Error" Class="my-2">@ErrorMessage</MudAlert>
     }
@@ -52,7 +46,6 @@
     public Hdf5Node SelectedNode { get; set; } = null!;
     private Hdf5Node? oldSelectedNode;
 
-    private bool IsLoading = false;
     private string ErrorMessage = "";
     private readonly int MaxDataPoints = 1000; // 1000으로 고정
     private List<Hdf5Dataset> AvailableDatasets = new();
@@ -78,11 +71,15 @@
         StateHasChanged();
     }
 
+    private bool _isFirstRender = true;
+
     protected override async Task OnParametersSetAsync()
     {
-        if (SelectedNode != null && SelectedNode != oldSelectedNode)
+        if (SelectedNode != null && SelectedNode != oldSelectedNode || _isFirstRender)
         {
+
             oldSelectedNode = SelectedNode;
+            _isFirstRender = false;
 
             ActiveDatasets.Clear();
             DatasetValues.Clear();
@@ -99,7 +96,6 @@
 
         try
         {
-            IsLoading = true;
             ErrorMessage = "";
             StateHasChanged();
 
@@ -137,7 +133,6 @@
         }
         finally
         {
-            IsLoading = false;
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -363,5 +358,21 @@
         }
 
         Labels = labels;
+    }
+
+    // Hdf5DataTable.razor와 Hdf5DataChart.razor에 추가
+    protected override bool ShouldRender()
+    {
+        // 필요한 경우에만 렌더링 (예: 선택된 노드가 변경된 경우)
+        return _lastRenderedNode != SelectedNode;
+    }
+
+    // 마지막으로 렌더링된 노드 추적
+    private Hdf5Node _lastRenderedNode;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        _lastRenderedNode = SelectedNode;
+        base.OnAfterRender(firstRender);
     }
 }

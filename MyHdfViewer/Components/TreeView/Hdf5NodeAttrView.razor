@@ -13,8 +13,8 @@
             <h6>Attribute</h6>
 
             <FluentDataGrid Items="@NodeAttributes" >
-                <PropertyColumn Property="@(node => node.Name)" style="width: 100%;" />
-                <PropertyColumn Property="@(node => node.Value)" style="width: 100%;" />
+                <PropertyColumn Property="@(Attr => Attr.Name)" style="width: 100%;" />
+                <PropertyColumn Property="@(Attr => Attr.Value)" style="width: 100%;" />
             </FluentDataGrid>
         }
         else
@@ -41,8 +41,6 @@
         {
             try
             {
-                StateHasChanged();
-
                 oldSelectedNode = SelectedNode;
 
                 NodeAttributes = GetNodeAttributes();

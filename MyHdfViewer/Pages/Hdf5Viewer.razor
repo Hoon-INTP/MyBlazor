@@ -64,73 +64,59 @@
     <FluentStack Orientation="Orientation.Horizontal"
         HorizontalAlignment="HorizontalAlignment.Left"
         VerticalAlignment="VerticalAlignment.Top">
-            @if (isLoading)
+            @if (fileModel != null)
             {
-                <div class="loading-container">
-                    <FluentProgressRing />
-                </div>
+                <FluentCard style="max-width: 300px; width: auto;">
+                    <Hdf5TreeView FileModel="@fileModel" SelectedNode="@selectedNode" OnNodeSelected="@SelectNode" />
+                </FluentCard>
             }
             else
             {
-                @if (fileModel != null)
-                {
-                    <FluentCard style="max-width: 300px; width: auto;">
-                        <Hdf5TreeView FileModel="@fileModel" SelectedNode="@selectedNode" OnNodeSelected="@SelectNode" />
-                    </FluentCard>
-                }
-                else
-                {
-                    <div class="alert alert-info mt-3">
-                        <p>Select File first.</p>
-                    </div>
-                }
-
-                @if (selectedNode != null)
-                {
-                    <FluentCard style="min-height: 300px;">
-                        <div style="display: flex; width=100%">
-                            <FluentButton id="BtnAttrShow" Appearance="Appearance.Outline" @onclick="() => visibleAttribute = !visibleAttribute">
-                                Show Attribute
-                            </FluentButton>
-
-                            <FluentPopover Style="width: 100%;" AnchorId="BtnAttrShow" @bind-Open="visibleAttribute" AutoFocus="false">
-                                <Body>
-                                    <Hdf5NodeAttrView SelectedNode="@selectedNode" />
-                                </Body>
-                            </FluentPopover>
-                        </div>
-
-                        <FluentTabs>
-                            <FluentTab Id="DataGrid">
-                                <Header>
-                                    <FluentIcon Value="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size20.Table())" />
-                                    Data Grid
-                                </Header>
-
-                                <Content>
-                                    <Hdf5DataTable SelectedNode="@selectedNode" />
-                                </Content>
-                            </FluentTab>
-
-                             <FluentTab Id="DataChart">
-                                <Header>
-                                    <FluentIcon Value="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size20.DataArea())"/>
-                                    Data Chart
-                                </Header>
-
-                                <Content>
-                                    <Hdf5DataChart SelectedNode="@selectedNode" />
-                                </Content>
-                            </FluentTab>
-                        </FluentTabs>
-                    </FluentCard>
-                }
-                else
-                {
-
-                }
+                <div class="alert alert-info mt-3">
+                    <p>Select File first.</p>
+                </div>
             }
 
+            @if (selectedNode != null)
+            {
+                <FluentCard style="min-height: 300px;">
+                    <div style="display: flex; width=100%">
+                        <FluentButton id="BtnAttrShow" Appearance="Appearance.Outline" @onclick="() => visibleAttribute = !visibleAttribute">
+                            Show Attribute
+                        </FluentButton>
+
+                        <FluentPopover Style="width: 100%;" AnchorId="BtnAttrShow" @bind-Open="visibleAttribute" AutoFocus="false">
+                            <Body>
+                                <Hdf5NodeAttrView SelectedNode="@selectedNode" />
+                            </Body>
+                        </FluentPopover>
+                    </div>
+
+                    <FluentTabs>
+                        <FluentTab Id="DataGrid">
+                            <Header>
+                                <FluentIcon Value="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size20.Table())" />
+                                Data Grid
+                            </Header>
+
+                            <Content>
+                                <Hdf5DataTable SelectedNode="@selectedNode" />
+                            </Content>
+                        </FluentTab>
+
+                         <FluentTab Id="DataChart">
+                            <Header>
+                                <FluentIcon Value="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size20.DataArea())"/>
+                                Data Chart
+                            </Header>
+
+                            <Content>
+                                <Hdf5DataChart SelectedNode="@selectedNode" />
+                            </Content>
+                        </FluentTab>
+                    </FluentTabs>
+                </FluentCard>
+            }
         </FluentStack>
 </FluentStack>
 
@@ -139,7 +125,6 @@
     private Hdf5Node? selectedNode;
     private Hdf5FileModel? selectedFile => fileModel;
     private string? errorMessage;
-    private bool isLoading;
 
     private bool visibleAttribute;
 
@@ -165,7 +150,6 @@
     {
         try
         {
-            isLoading = true;
             errorMessage = null;
 
             var file = e.File;
@@ -225,7 +209,6 @@
         }
         finally
         {
-            isLoading = false;
         }
     }
 
@@ -246,7 +229,6 @@
     {
         try
         {
-            isLoading = true;
             errorMessage = null;
             fileModel = null;
             selectedNode = null;
@@ -265,6 +247,7 @@
             var localFile = Path.GetTempFileName() + file.Name;
 
             currFile = file.Name;
+            await InvokeAsync(StateHasChanged);
 
             Files.Add(localFile);
 
@@ -276,8 +259,13 @@
 
             stopwatch.Stop();
 
-            fileModel = IHdf5Reader.ReadHdf5FromTempFile(localFile, currFile);
-            selectedNode = fileModel.RootGroup;
+            await Task.Run(async () => {
+                fileModel = IHdf5Reader.ReadHdf5FromTempFile(localFile, currFile);
+                await InvokeAsync(() => {
+                    selectedNode = fileModel.RootGroup;
+                    StateHasChanged();
+                });
+            });
 
             Console.WriteLine($"File Loaded [Name: {currFile}], [Size: {file.Size / 1024}KB], [Elapsed Time: {stopwatch.ElapsedMilliseconds}ms]");
         }
@@ -288,7 +276,7 @@
         }
         finally
         {
-            isLoading = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 

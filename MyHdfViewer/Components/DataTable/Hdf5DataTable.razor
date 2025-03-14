@@ -1,13 +1,7 @@
 @using MyHdfViewer.Models
 @using Microsoft.FluentUI.AspNetCore.Components
 
-@if (IsLoading)
-{
-    <div class="loading-container">
-        <FluentProgressRing />
-    </div>
-}
-else if (SelectedNode is Hdf5Dataset dataset)
+@if (SelectedNode is Hdf5Dataset dataset)
 {
     <div style="margin-top: 1rem;">
         <p>
@@ -74,16 +68,31 @@ else if (SelectedNode is Hdf5Group group)
     public Hdf5Node SelectedNode { get; set; } = null!;
     private Hdf5Node? oldSelectedNode;
 
-    private bool IsLoading = false;
-
     private record DataItem(int Index, string Value);
-    private IQueryable<DataItem>? GridItems => GetGridItems();
+    //private IQueryable<DataItem>? GridItems => GetGridItems();
 
     private record DatasetInfo(string Name, Hdf5Dataset Dataset);
     private List<DatasetInfo>? datasets;
 
     private record DataRowItem(int RowIndex, Dictionary<string, string> Values);
     private IQueryable<DataRowItem>? dataValues;
+
+    private IQueryable<DataItem>? _gridItemsCache;
+    private Hdf5Node? _lastNodeForGrid;
+
+    private IQueryable<DataItem>? GridItems
+    {
+        get
+        {
+            // 노드가 변경된 경우에만 그리드 아이템 다시 계산
+            if(_lastNodeForGrid != SelectedNode)
+            {
+                _lastNodeForGrid = SelectedNode;
+                _gridItemsCache = GetGridItems();
+            }
+            return _gridItemsCache;
+        }
+    }
 
     private IQueryable<DataItem>? GetGridItems()
     {
@@ -227,18 +236,21 @@ else if (SelectedNode is Hdf5Group group)
         });
     }
 
+    private bool _isFirstRender = true;
+
     protected override async Task OnParametersSetAsync()
     {
-        if (SelectedNode != oldSelectedNode)
+        if (SelectedNode != oldSelectedNode || _isFirstRender)
         {
+
             try
             {
-                IsLoading = true;
                 StateHasChanged();
 
                 datasets = null;
                 dataValues = null;
                 oldSelectedNode = SelectedNode;
+                _isFirstRender = false;
 
                 if (SelectedNode is Hdf5Group)
                 {
@@ -248,7 +260,6 @@ else if (SelectedNode is Hdf5Group group)
             }
             finally
             {
-                IsLoading = false;
                 await InvokeAsync(StateHasChanged);
             }
         }
@@ -257,5 +268,21 @@ else if (SelectedNode is Hdf5Group group)
     protected override void OnInitialized()
     {
         base.OnInitialized();
+    }
+
+    // Hdf5DataTable.razor와 Hdf5DataChart.razor에 추가
+    protected override bool ShouldRender()
+    {
+        // 필요한 경우에만 렌더링 (예: 선택된 노드가 변경된 경우)
+        return _lastRenderedNode != SelectedNode;
+    }
+
+    // 마지막으로 렌더링된 노드 추적
+    private Hdf5Node _lastRenderedNode;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        _lastRenderedNode = SelectedNode;
+        base.OnAfterRender(firstRender);
     }
 }
