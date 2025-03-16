@@ -11,7 +11,7 @@
     else if (AvailableDatasets != null && AvailableDatasets.Any())
     {
         <div class="dataset-selector">
-            <MudText Typo="Typo.subtitle1">데이터셋 선택:</MudText>
+            <MudText Typo="Typo.subtitle1">占쏙옙占쏙옙占싶쇽옙 占쏙옙占쏙옙:</MudText>
             <div class="dataset-toggles">
                 @foreach (var dataset in AvailableDatasets)
                 {
@@ -46,18 +46,18 @@
     public Hdf5Node SelectedNode { get; set; } = null!;
     private Hdf5Node? oldSelectedNode;
 
+    private bool DoRender = true;
+
     private string ErrorMessage = "";
-    private readonly int MaxDataPoints = 1000; // 1000으로 고정
+    private readonly int MaxDataPoints = 1000;
     private List<Hdf5Dataset> AvailableDatasets = new();
     private HashSet<string> ActiveDatasets = new();
     private Dictionary<string, List<double>> DatasetValues = new();
     private string[] Labels = Array.Empty<string>();
     private readonly ChartOptions LineChartOption = new();
 
-    // 라인 차트 시리즈 데이터
     private List<ChartSeries> LineSeries = new();
 
-    // 색상 매핑
     private readonly Color[] MudColors = new[] {
         Color.Primary, Color.Secondary, Color.Success, Color.Warning,
         Color.Error, Color.Info, Color.Dark
@@ -75,8 +75,9 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        if (SelectedNode != null && SelectedNode != oldSelectedNode || _isFirstRender)
+        if (SelectedNode != null && (SelectedNode != oldSelectedNode || _isFirstRender))
         {
+            DoRender = true;
 
             oldSelectedNode = SelectedNode;
             _isFirstRender = false;
@@ -100,20 +101,16 @@
             StateHasChanged();
 
             await Task.Run(async () => {
-                // 현재 그룹의 직접적인 데이터셋만 찾기
                 var datasets = FindDirectDatasets(SelectedNode);
 
-                // 숫자 데이터를 포함하는 데이터셋만 필터링
                 AvailableDatasets = FilterNumericDatasets(datasets);
 
                 if (!AvailableDatasets.Any())
                     return;
 
-                // 모든 데이터셋을 로드하되, 첫 번째 데이터셋만 활성화
                 string firstDatasetPath = AvailableDatasets.First().Path;
                 ActiveDatasets.Add(firstDatasetPath);
 
-                // 모든 데이터셋의 값을 미리 로드
                 foreach (var dataset in AvailableDatasets)
                 {
                     var dataArray = dataset.GetDataArray();
@@ -123,17 +120,18 @@
                     }
                 }
 
-                // 차트 업데이트
+                // 占쏙옙트 占쏙옙占쏙옙占쏙옙트
                 await UpdateChartSeriesAsync();
             });
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"데이터셋 로딩 중 오류 발생: {ex.Message}";
+            ErrorMessage = $"占쏙옙占쏙옙占싶쇽옙 占싸듸옙 占쏙옙 占쏙옙占쏙옙 占쌩삼옙: {ex.Message}";
         }
         finally
         {
             await InvokeAsync(StateHasChanged);
+            DoRender = false;
         }
     }
 
@@ -147,17 +145,16 @@
 
     private Color GetDatasetMudColor(string datasetPath)
     {
-        // 일관된 색상 매핑을 위해 인덱스 계산
         int index = AvailableDatasets.FindIndex(d => d.Path == datasetPath);
         return MudColors[index % MudColors.Length];
     }
 
     private async Task ToggleDataset(string datasetPath)
     {
-        // 데이터셋 활성/비활성 토글
+        DoRender = true;
+
         if (ActiveDatasets.Contains(datasetPath))
         {
-            // 마지막 항목은 비활성화하지 않음 (최소 하나는 표시)
             if (ActiveDatasets.Count > 1)
             {
                 ActiveDatasets.Remove(datasetPath);
@@ -168,8 +165,9 @@
             ActiveDatasets.Add(datasetPath);
         }
 
-        // 차트 업데이트
         await UpdateChartSeriesAsync();
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task UpdateChartSeriesAsync()
@@ -178,7 +176,6 @@
         {
             LineSeries = new List<ChartSeries>();
 
-            // 최대 데이터 길이 찾기 (X축 라벨 생성용)
             int maxDataLength = 0;
             foreach (var datasetPath in ActiveDatasets)
             {
@@ -188,10 +185,8 @@
                 }
             }
 
-            // 라벨 생성
             GenerateLabels(maxDataLength);
 
-            // 활성화된 데이터셋만 차트 시리즈에 추가
             foreach (var datasetPath in ActiveDatasets)
             {
                 if (DatasetValues.TryGetValue(datasetPath, out var values))
@@ -212,11 +207,10 @@
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"차트 업데이트 중 오류 발생: {ex.Message}";
+            ErrorMessage = $"占쏙옙트 占쏙옙占쏙옙占쏙옙트 占쏙옙 占쏙옙占쏙옙 占쌩삼옙: {ex.Message}";
         }
     }
 
-    // 선택된 노드에서 직접적인 데이터셋만 찾기
     private List<Hdf5Dataset> FindDirectDatasets(Hdf5Node node)
     {
         var datasets = new List<Hdf5Dataset>();
@@ -224,7 +218,6 @@
         if (node == null)
             return datasets;
 
-        // 현재 노드가 그룹인 경우, 직접적인 자식 중 데이터셋만 찾기
         if (node is Hdf5Group group)
         {
             foreach (var child in group.Children)
@@ -235,7 +228,6 @@
                 }
             }
         }
-        // 현재 노드가 데이터셋인 경우, 해당 데이터셋만 추가
         else if (node is Hdf5Dataset singleDataset)
         {
             datasets.Add(singleDataset);
@@ -244,24 +236,20 @@
         return datasets;
     }
 
-    // 숫자 데이터를 포함하는 데이터셋만 필터링
     private List<Hdf5Dataset> FilterNumericDatasets(List<Hdf5Dataset> datasets)
     {
         var numericDatasets = new List<Hdf5Dataset>();
 
         foreach (var dataset in datasets)
         {
-            // HDF5 숫자 데이터 타입 확인
             bool isNumericType = IsNumericDataType(dataset.DataType);
 
             if (isNumericType && dataset.GetDataArray() != null)
             {
                 var array = dataset.GetDataArray();
 
-                // 배열이 비어있지 않고 숫자 데이터를 포함하는지 확인
                 if (array != null && array.Length > 0)
                 {
-                    // 샘플 값을 추출하여 숫자로 변환 가능한지 확인
                     var sampleValue = array.GetValue(0);
                     if (sampleValue != null && CanConvertToNumber(sampleValue))
                     {
@@ -274,17 +262,13 @@
         return numericDatasets;
     }
 
-    // 숫자 데이터 타입인지 확인 (실제 HDF5 라이브러리의 타입 상수를 사용해야 함)
     private bool IsNumericDataType(byte dataType)
     {
-        // 아래는 HDF5 숫자 데이터 타입의 예시 값
-        // 실제 구현에서는 라이브러리의 상수를 사용해야 함
-        byte[] numericTypes = { 0, 1, 2, 3, 4, 5, 6 }; // int8, int16, int32, int64, float, double 등
+        byte[] numericTypes = { 0, 1, 2, 3, 4, 5, 6 }; // int8, int16, int32, int64, float, double 占쏙옙
 
         return numericTypes.Contains(dataType);
     }
 
-    // 값을 숫자로 변환할 수 있는지 확인
     private bool CanConvertToNumber(object value)
     {
         if (value == null)
@@ -295,7 +279,6 @@
         return double.TryParse(strValue, out _);
     }
 
-    // 배열을 숫자 리스트로 변환하고 다운샘플링 적용
     private List<double> ConvertToNumericList(Array array, int maxPoints)
     {
         var result = new List<double>();
@@ -303,7 +286,6 @@
         if (array == null || array.Length == 0)
             return result;
 
-        // 각 요소를 숫자로 변환하여 리스트에 추가
         var numericValues = new List<double>();
         foreach (var item in array)
         {
@@ -313,13 +295,11 @@
             }
         }
 
-        // 다운샘플링 적용
         if (maxPoints <= 0 || numericValues.Count <= maxPoints)
         {
             return numericValues;
         }
 
-        // 균등 간격 샘플링
         double step = (double)numericValues.Count / maxPoints;
         for (int i = 0; i < maxPoints; i++)
         {
@@ -330,7 +310,6 @@
         return result;
     }
 
-    // 라벨 생성
     private void GenerateLabels(int dataLength)
     {
         if (dataLength == 0)
@@ -339,7 +318,6 @@
             return;
         }
 
-        // 데이터 포인트 수에 따라 적절한 수의 라벨 생성
         int labelCount = dataLength;
         if (labelCount <= 1)
         {
@@ -347,7 +325,6 @@
             return;
         }
 
-        // 균등 간격으로 라벨 생성
         var labels = new string[labelCount];
         double step = (double)(dataLength - 1) / (labelCount - 1);
 
@@ -360,19 +337,17 @@
         Labels = labels;
     }
 
-    // Hdf5DataTable.razor와 Hdf5DataChart.razor에 추가
     protected override bool ShouldRender()
     {
-        // 필요한 경우에만 렌더링 (예: 선택된 노드가 변경된 경우)
-        return _lastRenderedNode != SelectedNode;
+        return DoRender || _lastRenderedNode != SelectedNode;
     }
 
-    // 마지막으로 렌더링된 노드 추적
     private Hdf5Node _lastRenderedNode;
 
     protected override void OnAfterRender(bool firstRender)
     {
         _lastRenderedNode = SelectedNode;
+        DoRender = false;
         base.OnAfterRender(firstRender);
     }
 }

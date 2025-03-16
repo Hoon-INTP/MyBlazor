@@ -22,7 +22,7 @@
 
             <MudDivider Class="my-2" />
 
-            <MudList Clickable="true" Dense="true" T="Hdf5Dataset">
+            <MudList Dense="true" T="Hdf5Dataset">
                 @foreach (var dataset in AvailableDatasets)
                 {
                     bool isChecked = TempActiveDatasets.Contains(dataset.Path);

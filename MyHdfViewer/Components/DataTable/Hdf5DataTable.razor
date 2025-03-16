@@ -51,13 +51,13 @@ else if (SelectedNode is Hdf5Group group)
                 }
                 else
                 {
-                    <p>No datasets in this group</p>
+                    <p>No datasets in this group (total children: @group.Children.Count)</p>
                 }
             </div>
         }
         else
         {
-            <p>No datasets in this group</p>
+            <p>No children in this group</p>
         }
     </div>
 }
@@ -67,6 +67,8 @@ else if (SelectedNode is Hdf5Group group)
     [Parameter]
     public Hdf5Node SelectedNode { get; set; } = null!;
     private Hdf5Node? oldSelectedNode;
+
+    private bool DoRender = true;
 
     private record DataItem(int Index, string Value);
     //private IQueryable<DataItem>? GridItems => GetGridItems();
@@ -84,7 +86,7 @@ else if (SelectedNode is Hdf5Group group)
     {
         get
         {
-            // ³ëµå°¡ º¯°æµÈ °æ¿ì¿¡¸¸ ±×¸®µå ¾ÆÀÌÅÛ ´Ù½Ã °è»ê
+            // ï¿½ï¿½å°¡ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ì¿¡ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½
             if(_lastNodeForGrid != SelectedNode)
             {
                 _lastNodeForGrid = SelectedNode;
@@ -158,8 +160,8 @@ else if (SelectedNode is Hdf5Group group)
 
         if (SelectedNode is Hdf5Group group)
         {
-            await Task.Run(() =>
-            {
+            //await Task.Run(() =>
+            //{
                 foreach (var child in group.Children)
                 {
                     if (child is Hdf5Dataset dataset)
@@ -167,7 +169,7 @@ else if (SelectedNode is Hdf5Group group)
                         result.Add(new DatasetInfo(dataset.Name, dataset));
                     }
                 }
-            });
+            //});
         }
 
         return result;
@@ -185,8 +187,8 @@ else if (SelectedNode is Hdf5Group group)
             return null;
         }
 
-        return await Task.Run(() =>
-        {
+        //return await Task.Run(() =>
+        //{
             int maxRows = 0;
             foreach (var datasetInfo in datasets)
             {
@@ -198,11 +200,21 @@ else if (SelectedNode is Hdf5Group group)
                     {
                         maxRows = Math.Max(maxRows, dataArray.Length);
                     }
+                    else
+                    {
+                        Console.WriteLine($"ë°ì´í„°ì…‹ '{dataset.Name}'ì˜ ë°°ì—´ì´ nullì…ë‹ˆë‹¤.");
+                    }
                 }
+                else
+                {
+                    Console.WriteLine($"ë°ì´í„°ì…‹ '{dataset.Name}'ì˜ ë°ì´í„°ê°€ nullì…ë‹ˆë‹¤.");
+                }
+
             }
 
             if (maxRows == 0)
             {
+                Console.WriteLine("ëª¨ë“  ë°ì´í„°ì…‹ì˜ í–‰ ìˆ˜ê°€ 0ì…ë‹ˆë‹¤.");
                 return null;
             }
 
@@ -233,7 +245,7 @@ else if (SelectedNode is Hdf5Group group)
             }
 
             return rows.AsQueryable();
-        });
+        //});
     }
 
     private bool _isFirstRender = true;
@@ -245,6 +257,8 @@ else if (SelectedNode is Hdf5Group group)
 
             try
             {
+                DoRender = true;
+
                 StateHasChanged();
 
                 datasets = null;
@@ -255,12 +269,31 @@ else if (SelectedNode is Hdf5Group group)
                 if (SelectedNode is Hdf5Group)
                 {
                     datasets = await GetGroupDatasetsAsync();
-                    dataValues = await GetGroupDataValuesAsync();
+
+                    if (datasets != null && datasets.Any())
+                    {
+                        dataValues = await GetGroupDataValuesAsync();
+
+                        if (dataValues != null)
+                        {
+
+                        }
+                        else
+                        {
+                            Console.WriteLine("ë°ì´í„° ê°’ì„ ë¡œë“œí•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("ë°ì´í„°ì…‹ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
+                    }
                 }
             }
             finally
             {
                 await InvokeAsync(StateHasChanged);
+
+                DoRender = false;
             }
         }
     }
@@ -270,19 +303,20 @@ else if (SelectedNode is Hdf5Group group)
         base.OnInitialized();
     }
 
-    // Hdf5DataTable.razor¿Í Hdf5DataChart.razor¿¡ Ãß°¡
+    // Hdf5DataTable.razorï¿½ï¿½ Hdf5DataChart.razorï¿½ï¿½ ï¿½ß°ï¿½
     protected override bool ShouldRender()
     {
-        // ÇÊ¿äÇÑ °æ¿ì¿¡¸¸ ·»´õ¸µ (¿¹: ¼±ÅÃµÈ ³ëµå°¡ º¯°æµÈ °æ¿ì)
-        return _lastRenderedNode != SelectedNode;
+        // ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½ï¿½ì¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½: ï¿½ï¿½ï¿½Ãµï¿½ ï¿½ï¿½å°¡ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
+        return DoRender || _lastRenderedNode != SelectedNode;
     }
 
-    // ¸¶Áö¸·À¸·Î ·»´õ¸µµÈ ³ëµå ÃßÀû
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     private Hdf5Node _lastRenderedNode;
 
     protected override void OnAfterRender(bool firstRender)
     {
         _lastRenderedNode = SelectedNode;
+        DoRender = false;
         base.OnAfterRender(firstRender);
     }
 }
