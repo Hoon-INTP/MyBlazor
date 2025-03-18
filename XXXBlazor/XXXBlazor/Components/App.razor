@@ -1,0 +1,101 @@
+﻿@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@inject IFileVersionProvider FileVersionProvider
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link href=@AppendVersion("_content/DevExpress.Blazor.Themes/blazing-berry.bs5.min.css") rel="stylesheet" />
+    @DxResourceManager.RegisterScripts()
+    <link href=@AppendVersion("css/site.css") rel="stylesheet" />
+    <link href=@AppendVersion("XXXBlazor.styles.css") rel="stylesheet" />
+    <HeadOutlet />
+</head>
+<body>
+    <Routes></Routes>
+    <script src="_framework/blazor.web.js"></script>
+
+    <!-- 파일 처리 JavaScript 코드 인라인 삽입 -->
+    <script>
+        // 웹 워커 코드를 Blob URL로 변환
+        const workerCode = `
+            self.onmessage = function (e) {
+                const { chunkIndex, data } = e.data;
+
+                // 데이터 처리 로직 (간단히 그대로 반환)
+                const processedData = data;
+
+                // 처리 결과 반환
+                self.postMessage({ chunkIndex, processedData });
+            };
+        `;
+        const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+
+        // 전역 변수
+        let dotNetReference = null;
+        const workers = [];
+        const maxWorkers = navigator.hardwareConcurrency || 4;
+
+        // Blazor 앱에서 호출하는 초기화 메서드
+        window.initializeWorkers = function (dotNetRef) {
+            console.log("initializeWorkers 호출됨", dotNetRef);
+            dotNetReference = dotNetRef;
+
+            // 기존 워커 제거
+            for (let worker of workers) {
+                worker.terminate();
+            }
+            workers.length = 0;
+
+            // 새 워커 생성
+            for (let i = 0; i < maxWorkers - 1; i++) {
+                try {
+                    const worker = new Worker(workerUrl);
+                    worker.onmessage = function (e) {
+                        const { chunkIndex, processedData } = e.data;
+                        dotNetReference.invokeMethodAsync('OnChunkProcessed', chunkIndex, processedData);
+                    };
+                    workers.push(worker);
+                } catch (error) {
+                    console.error("워커 생성 오류:", error);
+                }
+            }
+
+            console.log(`${workers.length}개의 웹 워커가 초기화되었습니다.`);
+        };
+
+        // 청크 처리 요청
+        window.processChunk = function (chunkIndex, data) {
+            if (workers.length === 0) {
+                console.error("워커가 초기화되지 않았습니다.");
+                return;
+            }
+
+            // 작업을 라운드로빈 방식으로 워커에 분배
+            const worker = workers[chunkIndex % workers.length];
+            worker.postMessage({ chunkIndex, data });
+        };
+
+        // 워커 정리
+        window.disposeWorkers = function () {
+            for (let worker of workers) {
+                worker.terminate();
+            }
+            workers.length = 0;
+            dotNetReference = null;
+            // Blob URL 해제
+            URL.revokeObjectURL(workerUrl);
+        };
+
+        console.log("파일 처리 스크립트가 로드되었습니다.");
+    </script>
+</body>
+
+</html>
+
+@code{
+    private string AppendVersion(string path) => FileVersionProvider.AddFileVersionToPath("/", path);
+}
