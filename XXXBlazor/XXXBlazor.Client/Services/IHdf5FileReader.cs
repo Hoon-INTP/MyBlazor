@@ -1,7 +1,7 @@
 
-using XXXHdfViewer.Models;
+using XXXBlazor.Client.Models;
 
-namespace XXXHdfViewer.Services
+namespace XXXBlazor.Client.Services
 {
     /// <summary>
     /// Create Hdf5FileModel from HDF5 File MemoryStream

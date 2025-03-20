@@ -29,6 +29,7 @@ window.initializeWorkers = function (dotNetRef) {
 // 청크 처리 요청
 window.processChunk = function (chunkIndex, data) {
     // 작업을 라운드로빈 방식으로 워커에 분배
+
     const worker = workers[chunkIndex % workers.length];
     worker.postMessage({ chunkIndex, data });
 };

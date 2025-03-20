@@ -2,17 +2,17 @@
 @rendermode InteractiveWebAssembly
 
 @using System.IO
+@using System.Diagnostics
 @using System.Threading
 @using System.Threading.Tasks
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Collections.Concurrent
 @using Microsoft.JSInterop
 
+@inject IHdf5FileReader iHdf5Reader
 @inject IJSRuntime JSRuntime
 
 <PageTitle>XXXViewer</PageTitle>
-
-<h1>XXXViewer</h1>
 
 @if (!isJsInitialized)
 {
@@ -25,15 +25,60 @@
         }
     </div>
 }
+else
+{
+    <DxStackLayout Orientation="Orientation.Horizontal">
+        <Items>
+            <DxStackLayoutItem>
+                <Template>
+                    <div>
+                        <DxStackLayout Orientation="Orientation.Vertical">
+                                <Items>
+                                    <DxStackLayoutItem>
+                                        <Template>
+                                            <div>
+                                                <DxFileInput
+                                                    Enabled="@isJsInitialized"
+                                                    ShowFileList="false"
+                                                    MaxFileCount="10"
+                                                    MaxFileSize="@MaxFileSize"
+                                                    AllowedFileExtensions="@(new List<string> { ".hdf5", ".h5" })"
+                                                    AllowMultiFileUpload="false"
+                                                    FilesUploading="OnFilesUploading"
+                                                    SelectedFilesChanged="@SelectedFilesChanged">
+                                                </DxFileInput>
+                                            </div>
+                                        </Template>
+                                    </DxStackLayoutItem>
 
-<DxFileInput
-          Enabled="@isJsInitialized"
-          MaxFileSize="@MaxFileSize"
-          FilesUploading="OnFilesUploading"
-          AllowedFileExtensions="@(new List<string> { ".hdf5", ".h5" })"
-          AllowMultiFileUpload="false"
-          SelectedFilesChanged="@SelectedFilesChanged">
-</DxFileInput>
+                                    <DxStackLayoutItem>
+                                        <Template>
+                                            <div>
+                                                Tree View
+                                            </div>
+                                        </Template>
+                                    </DxStackLayoutItem>
+                                </Items>
+                        </DxStackLayout>
+                    </div>
+                </Template>
+            </DxStackLayoutItem>
+
+            <DxStackLayoutItem>
+                <Template>
+                    <div>
+                        Grid <br>
+                        + Splitter<br>
+                        + Chart
+                    </div>
+                </Template>
+            </DxStackLayoutItem>
+        </Items>
+    </DxStackLayout>
+
+
+
+}
 
 @if (isLoading)
 {
@@ -50,7 +95,7 @@ else if (!string.IsNullOrEmpty(errorMessage) && isJsInitialized)
 }
 else if (processedChunks > 0)
 {
-    <h6>File Load Done!!!</h6>
+
 }
 
 @code {
@@ -70,6 +115,10 @@ else if (processedChunks > 0)
     private const int MAX_INITIALIZATION_ATTEMPTS = 3;
 
     int SelectedFilesCount { get; set; }
+
+    // File Data
+    private Hdf5FileModel? fileModel;
+    private Hdf5Node? selectedNode;
 
     // JavaScript 초기화를 OnAfterRenderAsync로 이동
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -122,7 +171,6 @@ else if (processedChunks > 0)
         }
     }
 
-    // 수동 초기화 재시도
     private async Task RetryInitialize()
     {
         initializationAttempts = 0;
@@ -133,6 +181,7 @@ else if (processedChunks > 0)
     {
         SelectedFilesCount = files.ToList().Count();
         InvokeAsync(StateHasChanged);
+        if(SelectedFilesCount == 0) errorMessage = null;
 
         Console.WriteLine($"SelectedFilesChanged {SelectedFilesCount}");
     }
@@ -142,12 +191,12 @@ else if (processedChunks > 0)
         Console.WriteLine("File Upload Start");
         try
         {
-            // JS가 초기화되지 않았다면 작업 중단
+            @* // JS가 초기화되지 않았다면 작업 중단
             if (!isJsInitialized)
             {
                 errorMessage = "JavaScript가 아직 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.";
                 return;
-            }
+            } *@
 
             errorMessage = null;
             isLoading = true;
@@ -169,17 +218,49 @@ else if (processedChunks > 0)
                 return;
             }
 
+            var stopwatch = Stopwatch.StartNew();
+
             // 파일 전체를 메모리 스트림에 복사
-            byte[] fileData;
             using (var memoryStream = new MemoryStream())
             {
                 using (var fileStream = file.OpenReadStream(maxAllowedSize: 500 * 1024 * 1024))
                 {
-                    await fileStream.CopyToAsync(memoryStream);
+                    if(file.Size > 5 * 1024 * 1024) //1MB
+                    {
+                        Console.WriteLine("over 5MB");
+                        int chunkSize1 = 16 * 1024; //16KB
+                        byte[] buffer = new byte[chunkSize1];
+                        int bytesRead;
+                        long totalBytesRead = 0;
+
+                        while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                        {
+                            await memoryStream.WriteAsync(buffer, 0, bytesRead);
+                            totalBytesRead += bytesRead;
+
+                            if (totalBytesRead % (4 * chunkSize1) == 0) // per 64KB (4chunks)
+                            {
+                                await Task.Delay(1);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("under 5MB");
+                        await fileStream.CopyToAsync(memoryStream);
+                    }
                 }
-                fileData = memoryStream.ToArray();
+
+                memoryStream.Position = 0;
+
+                stopwatch.Stop();
+                Console.WriteLine($"[Elapsed Time: {stopwatch.ElapsedMilliseconds}ms]");
+
+                fileModel = iHdf5Reader.ReadHdf5FromStream(memoryStream, file.Name);
+                selectedNode = fileModel.RootGroup;
             }
 
+            @* JSInterop 의 WebWorker로 백그라운드 Read
             // 청크 처리 설정
             int chunkSize = 16 * 1024;
             long fileSize = fileData.Length;
@@ -241,6 +322,7 @@ else if (processedChunks > 0)
 
             byte[] completeData = CombineChunks();
             errorMessage = $"파일 '{file.Name}' ({fileSize:N0} 바이트)을 성공적으로 처리했습니다.";
+            *@
         }
         catch (Exception exception)
         {
@@ -261,7 +343,6 @@ else if (processedChunks > 0)
         {
             processedData[chunkIndex] = _processedData;
             processedChunks++;
-
             // UI 업데이트 줄이기 (10개 청크마다 업데이트)
             if (processedChunks % 10 == 0 || processedChunks == totalChunks)
             {
@@ -307,5 +388,19 @@ else if (processedChunks > 0)
         {
             dotNetObjectRef?.Dispose();
         }
+    }
+
+    string ByteArrayToString(byte[] buffer)
+    {
+        return string.Join(" ", buffer.Select((b, i) =>
+                                                (b >= 0x20 && b <= 0x7E) ?
+                                                    (b >= 'A' && b <= 'Z') ? $"{(char)(b + 32)}" :   // 대문자 → 소문자
+                                                    (b >= 'a' && b <= 'z') ? $"{(char)(b - 32)}" :   // 소문자 → 대문자
+                                                    (b >= '0' && b <= '9') ? $"{(char)(b)}" :          // 숫자 → 그대로 출력
+                                                    $"{(char)b}" :
+                                                    $"0x{b:X2}"                                              // 나머지 → 16진수 변환
+                                                )
+                                                .Select((s, i) => (i % 16 == 15) ? s + "\n" : s)  // 16개마다 줄바꿈
+                                        );
     }
 }

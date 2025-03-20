@@ -1,7 +1,7 @@
 
 using PureHDF;
 
-namespace XXXHdfViewer.Models
+namespace XXXBlazor.Client.Models
 {
     /// <summary>
     /// Enum for HDF5 node type
@@ -128,7 +128,7 @@ namespace XXXHdfViewer.Models
         }
     }
 
-    // 데이터셋 노드: 실제 데이터를 포함하는 노드
+    // DataSet Node : Contains Data. End-point of the recursive path
     public class Hdf5Dataset : Hdf5Node
     {
         public Hdf5Dataset()
@@ -137,17 +137,17 @@ namespace XXXHdfViewer.Models
         }
 
         /// <summary>
-        /// 데이터 타입 (예: "int", "double", "string" 등)
+        /// Type of Data (ex: "int", "double", "string" , etc.)
         /// </summary>
         public required byte DataType { get; set; }
 
         /// <summary>
-        /// 데이터셋의 차원 정보
+        /// Dimensions of Dataset
         /// </summary>
         public required ulong[] Dimensions { get; set; }
 
         /// <summary>
-        /// 데이터가 로드되었는지 여부
+        /// Check data already loaded or not
         /// </summary>
         public bool IsDataLoaded { get; private set; }
 
@@ -157,7 +157,7 @@ namespace XXXHdfViewer.Models
         public long DatasetId { get; set; }
 
         /// <summary>
-        /// 실제 데이터. 필요에 따라 적절한 타입으로 변경 가능
+        /// Real Data. Can type-change if need
         /// </summary>
         private object? _data;
         public object? Data
@@ -258,16 +258,16 @@ namespace XXXHdfViewer.Models
         }
     }
 
-    // 어트리뷰트를 표현하는 클래스
+    // Attribute
     public class Hdf5Attribute
     {
         /// <summary>
-        /// 어트리뷰트 이름
+        /// Name of Attribute
         /// </summary>
         public required string Name { get; set; }
 
         /// <summary>
-        /// 어트리뷰트 값 (다양한 타입을 지원할 수 있도록 object 사용)
+        /// Value of Attribute
         /// </summary>
         public required object Value { get; set; }
     }

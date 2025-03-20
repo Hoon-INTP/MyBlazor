@@ -1,9 +1,7 @@
-using System.Text;
 using PureHDF;
-using PureHDF.Selections;
-using XXXHdfViewer.Models;
+using XXXBlazor.Client.Models;
 
-namespace XXXHdfViewer.Services
+namespace XXXBlazor.Client.Services
 {
     public class Hdf5FileReader : IHdf5FileReader
     {

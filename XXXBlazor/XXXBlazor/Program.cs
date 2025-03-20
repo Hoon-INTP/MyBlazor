@@ -1,6 +1,7 @@
 ﻿using XXXBlazor.Components;
 using XXXBlazor.Services;
 using XXXBlazor.Client.Pages;
+using XXXBlazor.Client.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+    // Server Program.cs에 추가
+builder.Services.AddScoped<IHdf5FileReader, Hdf5FileReader>();
 
 builder.Services.AddDevExpressBlazor(options => {
     options.BootstrapVersion = DevExpress.Blazor.BootstrapVersion.v5;

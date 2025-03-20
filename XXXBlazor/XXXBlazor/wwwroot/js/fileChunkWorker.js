@@ -14,6 +14,7 @@ self.onmessage = function (e) {
 function processChunk(data) {
     // 예시: 단순히 데이터를 그대로 반환
     // 실제로는 여기서 파싱, 변환, 압축 등의 작업을 수행할 수 있습니다
+
     return data;
 
     // 예시: 텍스트 데이터인 경우 처리 방법
