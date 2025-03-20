@@ -1,0 +1,880 @@
+@* @using XXXBlazor.Client.Models
+@using DevExpress.Blazor
+
+<div>
+    <h4>HDF5 파일 구조</h4>
+
+    @if (selectedNode == null)
+    {
+        <div>
+            파일을 선택해주세요.
+        </div>
+    }
+    else
+    {
+        <DxTreeView
+            @ref="treeView"
+            AllowSelectNodes="true"
+            SelectionChanged="OnNodeSelected">
+            <Nodes>
+                <DxTreeViewNode
+                    Text="@GetNodeDisplayText(selectedNode)"
+                    Expanded="true">
+                    @if (selectedNode.Children != null && selectedNode.Children.Any())
+                    {
+                        @foreach (var child in selectedNode.Children)
+                        {
+                            @RenderTreeNode(child)
+                        }
+                    }
+                </DxTreeViewNode>
+            </Nodes>
+        </DxTreeView>
+
+        @if (currentNode != null)
+        {
+            <div>
+                <h5>노드 정보</h5>
+                <div>
+                    <p><strong>이름:</strong> @currentNode.Name</p>
+                    <p><strong>경로:</strong> @currentNode.Path</p>
+                    <p><strong>타입:</strong> @currentNode.NodeType</p>
+
+                    @if (currentNode.NodeType == Hdf5NodeType.Dataset && currentNode.Dimensions != null)
+                    {
+                        <p><strong>차원:</strong> [@string.Join(", ", currentNode.Dimensions)]</p>
+                        <p><strong>데이터 타입:</strong> @(currentNode.DataType?.Name ?? "Unknown")</p>
+
+                        <div>
+                            <h6>데이터 미리보기</h6>
+                            @if (currentNode.Data != null)
+                            {
+                                @if (currentNode.Data is string dataStr)
+                                {
+                                    <p>@dataStr</p>
+                                }
+                                else if (currentNode.Data.GetType().IsArray)
+                                {
+                                    <p>@GetArrayPreview(currentNode.Data)</p>
+                                }
+                                else
+                                {
+                                    <p>@currentNode.Data.ToString()</p>
+                                }
+                            }
+                            else
+                            {
+                                <p>데이터 없음</p>
+                            }
+                        </div>
+                    }
+
+                    @if (currentNode.Attributes != null && currentNode.Attributes.Any())
+                    {
+                        <div>
+                            <h6>속성 (@currentNode.Attributes.Count)</h6>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>이름</th>
+                                        <th>값</th>
+                                        <th>타입</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var attr in currentNode.Attributes)
+                                    {
+                                        <tr>
+                                            <td><strong>@attr.Key</strong></td>
+                                            <td>@FormatAttributeValue(attr.Value)</td>
+                                            <td>@(attr.Value?.GetType().Name ?? "Unknown")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Hdf5TreeNode? selectedNode { get; set; }
+
+    [Parameter]
+    public EventCallback<Hdf5TreeNode> OnNodeClicked { get; set; }
+
+    private DxTreeView? treeView;
+    private Hdf5TreeNode? currentNode;
+
+    // 노드 경로를 키로 사용하는 딕셔너리
+    private Dictionary<string, Hdf5TreeNode> nodePathMap = new Dictionary<string, Hdf5TreeNode>();
+
+    protected override void OnParametersSet()
+    {
+        if (selectedNode != null && currentNode == null)
+        {
+            currentNode = selectedNode;
+        }
+
+        // 노드 맵 초기화
+        if (selectedNode != null)
+        {
+            nodePathMap.Clear();
+            BuildNodePathMap(selectedNode);
+        }
+    }
+
+    // 노드 경로 맵 구축
+    private void BuildNodePathMap(Hdf5TreeNode node)
+    {
+        if (node == null) return;
+
+        nodePathMap[node.Path] = node;
+
+        if (node.Children != null)
+        {
+            foreach (var child in node.Children)
+            {
+                BuildNodePathMap(child);
+            }
+        }
+    }
+
+    private RenderFragment RenderTreeNode(Hdf5TreeNode node) => builder =>
+    {
+        builder.OpenComponent<DxTreeViewNode>(0);
+        builder.AddAttribute(1, "Text", GetNodeDisplayText(node));
+        builder.AddAttribute(2, "Name", node.Path); // Name 속성 사용
+
+        // 자식 노드가 있는 경우에만 하위 노드 렌더링
+        if (node.Children != null && node.Children.Any())
+        {
+            builder.AddAttribute(3, "Nodes", (RenderFragment)(childBuilder =>
+            {
+                int index = 0;
+                foreach (var child in node.Children)
+                {
+                    childBuilder.AddContent(index++, RenderTreeNode(child));
+                }
+            }));
+        }
+
+        builder.CloseComponent();
+    };
+
+    private string GetNodeDisplayText(Hdf5TreeNode node)
+    {
+        if (node.NodeType == Hdf5NodeType.Dataset && node.Dimensions != null)
+        {
+            return $"{node.Name} [{string.Join(", ", node.Dimensions)}]";
+        }
+        if (node.NodeType == Hdf5NodeType.Group)
+        {
+            return $"{node.Name} (그룹)";
+        }
+        return node.Name;
+    }
+
+    private string GetArrayPreview(object array)
+    {
+        var arrayObj = array as Array;
+        if (arrayObj == null) return "잘못된 배열";
+
+        // 작은 배열인 경우 전체 표시
+        if (arrayObj.Length <= 10)
+        {
+            return FormatArray(arrayObj);
+        }
+
+        // 큰 배열은 처음 5개와 마지막 5개만 표시
+        var preview = new List<string>();
+        for (int i = 0; i < 5; i++)
+        {
+            preview.Add(FormatValue(arrayObj.GetValue(i)));
+        }
+        preview.Add("...");
+        for (int i = Math.Max(5, arrayObj.Length - 5); i < arrayObj.Length; i++)
+        {
+            preview.Add(FormatValue(arrayObj.GetValue(i)));
+        }
+
+        return $"[{string.Join(", ", preview)}]";
+    }
+
+    private string FormatArray(Array array)
+    {
+        var values = new List<string>();
+        for (int i = 0; i < array.Length; i++)
+        {
+            values.Add(FormatValue(array.GetValue(i)));
+        }
+        return $"[{string.Join(", ", values)}]";
+    }
+
+    private string FormatValue(object? value)
+    {
+        if (value == null) return "null";
+        if (value is float f) return f.ToString("0.###");
+        if (value is double d) return d.ToString("0.###");
+        return value.ToString() ?? "";
+    }
+
+    private string FormatAttributeValue(object? value)
+    {
+        if (value == null) return "null";
+
+        // 에러 메시지인 경우 구분
+        if (value is string str && str.StartsWith("Error reading attribute"))
+        {
+            return $"<span style=\"color:red\">{str}</span>";
+        }
+
+        // 숫자 포맷팅
+        if (value is float f) return f.ToString("0.###");
+        if (value is double d) return d.ToString("0.###");
+
+        // 배열 포맷팅
+        if (value.GetType().IsArray)
+        {
+            return GetArrayPreview(value);
+        }
+
+        return value.ToString() ?? "";
+    }
+
+    private async Task OnNodeSelected(TreeViewNodeEventArgs args)
+    {
+        try
+        {
+            if (args.NodeInfo == null) return;
+
+            Console.WriteLine("노드 선택됨");
+
+            // 노드 Name을 통해 노드 찾기
+            // (DevExpress는 Name 속성을 사용하여 노드를 식별)
+            string nodePath = args.NodeInfo.Name;
+
+            if (nodePathMap.TryGetValue(nodePath, out var node))
+            {
+                currentNode = node;
+                await OnNodeClicked.InvokeAsync(currentNode);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"노드 선택 처리 중 오류: {ex.Message}");
+        }
+    }
+}
+ *@
+
+@*
+@using XXXBlazor.Client.Models
+@using DevExpress.Blazor
+
+<div>
+    <h4>HDF5 파일 구조</h4>
+
+    @if (selectedNode == null)
+    {
+        <div>
+            파일을 선택해주세요.
+        </div>
+    }
+    else
+    {
+        <DxTreeView
+            @ref="treeView"
+            AllowSelectNodes="true"
+            SelectionChanged="OnNodeSelected">
+            <Nodes>
+                <DxTreeViewNode
+                    Text="@GetNodeDisplayText(selectedNode)"
+                    Name="@selectedNode.Path"
+                    Expanded="true">
+                    @if (selectedNode.Children != null && selectedNode.Children.Any())
+                    {
+                        @foreach (var child in selectedNode.Children)
+                        {
+                            @RenderTreeNode(child)
+                        }
+                    }
+                </DxTreeViewNode>
+            </Nodes>
+        </DxTreeView>
+
+        @if (currentNode != null)
+        {
+            <div>
+                <h5>노드 정보</h5>
+                <div>
+                    <p><strong>이름:</strong> @currentNode.Name</p>
+                    <p><strong>경로:</strong> @currentNode.Path</p>
+                    <p><strong>타입:</strong> @currentNode.NodeType</p>
+
+                    @if (currentNode.NodeType == Hdf5NodeType.Dataset && currentNode.Dimensions != null)
+                    {
+                        <p><strong>차원:</strong> [@string.Join(", ", currentNode.Dimensions)]</p>
+                        <p><strong>데이터 타입:</strong> @(currentNode.DataType?.Name ?? "Unknown")</p>
+
+                        <div>
+                            <h6>데이터 미리보기</h6>
+                            @if (currentNode.Data != null)
+                            {
+                                @if (currentNode.Data is string dataStr)
+                                {
+                                    <p>@dataStr</p>
+                                }
+                                else if (currentNode.Data.GetType().IsArray)
+                                {
+                                    <p>@GetArrayPreview(currentNode.Data)</p>
+                                }
+                                else
+                                {
+                                    <p>@currentNode.Data.ToString()</p>
+                                }
+                            }
+                            else
+                            {
+                                <p>데이터 없음</p>
+                            }
+                        </div>
+                    }
+
+                    @if (currentNode.Attributes != null && currentNode.Attributes.Any())
+                    {
+                        <div>
+                            <h6>속성 (@currentNode.Attributes.Count)</h6>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>이름</th>
+                                        <th>값</th>
+                                        <th>타입</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var attr in currentNode.Attributes)
+                                    {
+                                        <tr>
+                                            <td><strong>@attr.Key</strong></td>
+                                            <td>@FormatAttributeValue(attr.Value)</td>
+                                            <td>@(attr.Value?.GetType().Name ?? "Unknown")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Hdf5TreeNode? selectedNode { get; set; }
+
+    [Parameter]
+    public EventCallback<Hdf5TreeNode> OnNodeClicked { get; set; }
+
+    private DxTreeView? treeView;
+    private Hdf5TreeNode? currentNode;
+
+    // 노드 경로를 키로 사용하는 딕셔너리
+    private Dictionary<string, Hdf5TreeNode> nodePathMap = new Dictionary<string, Hdf5TreeNode>();
+
+    protected override void OnParametersSet()
+    {
+        if (selectedNode != null && currentNode == null)
+        {
+            currentNode = selectedNode;
+        }
+
+        // 노드 맵 초기화
+        if (selectedNode != null)
+        {
+            nodePathMap.Clear();
+            BuildNodePathMap(selectedNode);
+        }
+    }
+
+    // 노드 경로 맵 구축
+    private void BuildNodePathMap(Hdf5TreeNode node)
+    {
+        if (node == null) return;
+
+        // 경로가 null이 아닌지 확인
+        if (!string.IsNullOrEmpty(node.Path))
+        {
+            nodePathMap[node.Path] = node;
+        }
+
+        if (node.Children != null)
+        {
+            foreach (var child in node.Children)
+            {
+                BuildNodePathMap(child);
+            }
+        }
+    }
+
+    private RenderFragment RenderTreeNode(Hdf5TreeNode node) => builder =>
+    {
+        builder.OpenComponent<DxTreeViewNode>(0);
+        builder.AddAttribute(1, "Text", GetNodeDisplayText(node));
+
+        // 경로가 null이 아닌지 확인하고 Name 속성 설정
+        if (!string.IsNullOrEmpty(node.Path))
+        {
+            builder.AddAttribute(2, "Name", node.Path);
+        }
+        else
+        {
+            // 경로가 없으면 이름을 임시로 사용
+            builder.AddAttribute(2, "Name", $"node_{node.Name}_{Guid.NewGuid()}");
+        }
+
+        // 자식 노드가 있는 경우에만 하위 노드 렌더링
+        if (node.Children != null && node.Children.Any())
+        {
+            builder.AddAttribute(3, "Nodes", (RenderFragment)(childBuilder =>
+            {
+                int index = 0;
+                foreach (var child in node.Children)
+                {
+                    childBuilder.AddContent(index++, RenderTreeNode(child));
+                }
+            }));
+        }
+
+        builder.CloseComponent();
+    };
+
+    private string GetNodeDisplayText(Hdf5TreeNode node)
+    {
+        if (node.NodeType == Hdf5NodeType.Dataset && node.Dimensions != null)
+        {
+            return $"{node.Name} [{string.Join(", ", node.Dimensions)}]";
+        }
+        if (node.NodeType == Hdf5NodeType.Group)
+        {
+            return $"{node.Name} (그룹)";
+        }
+        return node.Name;
+    }
+
+    private string GetArrayPreview(object array)
+    {
+        var arrayObj = array as Array;
+        if (arrayObj == null) return "잘못된 배열";
+
+        // 작은 배열인 경우 전체 표시
+        if (arrayObj.Length <= 10)
+        {
+            return FormatArray(arrayObj);
+        }
+
+        // 큰 배열은 처음 5개와 마지막 5개만 표시
+        var preview = new List<string>();
+        for (int i = 0; i < 5; i++)
+        {
+            preview.Add(FormatValue(arrayObj.GetValue(i)));
+        }
+        preview.Add("...");
+        for (int i = Math.Max(5, arrayObj.Length - 5); i < arrayObj.Length; i++)
+        {
+            preview.Add(FormatValue(arrayObj.GetValue(i)));
+        }
+
+        return $"[{string.Join(", ", preview)}]";
+    }
+
+    private string FormatArray(Array array)
+    {
+        var values = new List<string>();
+        for (int i = 0; i < array.Length; i++)
+        {
+            values.Add(FormatValue(array.GetValue(i)));
+        }
+        return $"[{string.Join(", ", values)}]";
+    }
+
+    private string FormatValue(object? value)
+    {
+        if (value == null) return "null";
+        if (value is float f) return f.ToString("0.###");
+        if (value is double d) return d.ToString("0.###");
+        return value.ToString() ?? "";
+    }
+
+    private string FormatAttributeValue(object? value)
+    {
+        if (value == null) return "null";
+
+        // 에러 메시지인 경우 구분
+        if (value is string str && str.StartsWith("Error reading attribute"))
+        {
+            return $"<span style=\"color:red\">{str}</span>";
+        }
+
+        // 숫자 포맷팅
+        if (value is float f) return f.ToString("0.###");
+        if (value is double d) return d.ToString("0.###");
+
+        // 배열 포맷팅
+        if (value.GetType().IsArray)
+        {
+            return GetArrayPreview(value);
+        }
+
+        return value.ToString() ?? "";
+    }
+
+    private async Task OnNodeSelected(TreeViewNodeEventArgs args)
+    {
+        try
+        {
+            if (args.NodeInfo == null)
+            {
+                Console.WriteLine("NodeInfo가 null입니다.");
+                return;
+            }
+
+            // 노드 Name을 통해 노드 찾기 (DevExpress는 Name 속성을 사용)
+            string? nodePath = args.NodeInfo.Name;
+
+            Console.WriteLine($"선택된 노드 경로: {nodePath}");
+
+            if (string.IsNullOrEmpty(nodePath))
+            {
+                Console.WriteLine("선택된 노드의 경로가 null 또는 빈 문자열입니다.");
+                return;
+            }
+
+            if (nodePathMap.TryGetValue(nodePath, out var node))
+            {
+                currentNode = node;
+                await OnNodeClicked.InvokeAsync(currentNode);
+            }
+            else
+            {
+                Console.WriteLine($"경로 '{nodePath}'에 해당하는 노드를 찾을 수 없습니다.");
+                // 모든 경로 목록 출력
+                Console.WriteLine("사용 가능한 경로:");
+                foreach (var path in nodePathMap.Keys)
+                {
+                    Console.WriteLine($"  - {path}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"노드 선택 처리 중 오류: {ex.Message}");
+            Console.WriteLine($"스택 트레이스: {ex.StackTrace}");
+        }
+    }
+}
+ *@
+
+
+ @using XXXBlazor.Client.Models
+@using DevExpress.Blazor
+
+<div>
+    <h4>HDF5 파일 구조</h4>
+
+    @if (selectedNode == null)
+    {
+        <div>
+            파일을 선택해주세요.
+        </div>
+    }
+    else
+    {
+        <DxTreeView
+            @ref="treeView"
+            AllowSelectNodes="true"
+            SelectionChanged="OnNodeSelected">
+            <NodeTemplate>
+                <span>@GetNodeDisplayText(context)</span>
+            </NodeTemplate>
+            <Nodes>
+                @CreateTreeNode(selectedNode)
+            </Nodes>
+        </DxTreeView>
+
+        @if (currentNode != null)
+        {
+            <div>
+                <h5>노드 정보</h5>
+                <div>
+                    <p><strong>이름:</strong> @currentNode.Name</p>
+                    <p><strong>경로:</strong> @currentNode.Path</p>
+                    <p><strong>타입:</strong> @currentNode.NodeType</p>
+
+                    @if (currentNode.NodeType == Hdf5NodeType.Dataset && currentNode.Dimensions != null)
+                    {
+                        <p><strong>차원:</strong> [@string.Join(", ", currentNode.Dimensions)]</p>
+                        <p><strong>데이터 타입:</strong> @(currentNode.DataType?.Name ?? "Unknown")</p>
+
+                        <div>
+                            <h6>데이터 미리보기</h6>
+                            @if (currentNode.Data != null)
+                            {
+                                @if (currentNode.Data is string dataStr)
+                                {
+                                    <p>@dataStr</p>
+                                }
+                                else if (currentNode.Data.GetType().IsArray)
+                                {
+                                    <p>@GetArrayPreview(currentNode.Data)</p>
+                                }
+                                else
+                                {
+                                    <p>@currentNode.Data.ToString()</p>
+                                }
+                            }
+                            else
+                            {
+                                <p>데이터 없음</p>
+                            }
+                        </div>
+                    }
+
+                    @if (currentNode.Attributes != null && currentNode.Attributes.Any())
+                    {
+                        <div>
+                            <h6>속성 (@currentNode.Attributes.Count)</h6>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>이름</th>
+                                        <th>값</th>
+                                        <th>타입</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var attr in currentNode.Attributes)
+                                    {
+                                        <tr>
+                                            <td><strong>@attr.Key</strong></td>
+                                            <td>@FormatAttributeValue(attr.Value)</td>
+                                            <td>@(attr.Value?.GetType().Name ?? "Unknown")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Hdf5TreeNode? selectedNode { get; set; }
+
+    [Parameter]
+    public EventCallback<Hdf5TreeNode> OnNodeClicked { get; set; }
+
+    private DxTreeView? treeView;
+    private Hdf5TreeNode? currentNode;
+
+    // 노드 경로를 키로 사용하는 딕셔너리
+    private Dictionary<string, Hdf5TreeNode> nodePathMap = new Dictionary<string, Hdf5TreeNode>();
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine("OnParametersSet 호출됨");
+
+        if (selectedNode != null)
+        {
+            Console.WriteLine($"Root 노드: {selectedNode.Name}, {selectedNode.Path}");
+            Console.WriteLine($"자식 노드 수: {selectedNode.Children?.Count ?? 0}");
+
+            if (currentNode == null)
+            {
+                currentNode = selectedNode;
+            }
+
+            // 노드 맵 초기화
+            nodePathMap.Clear();
+            BuildNodePathMap(selectedNode);
+
+            Console.WriteLine($"노드 맵 크기: {nodePathMap.Count}");
+        }
+    }
+
+    // 노드 경로 맵 구축
+    private void BuildNodePathMap(Hdf5TreeNode node)
+    {
+        if (node == null) return;
+
+        if (!string.IsNullOrEmpty(node.Path))
+        {
+            nodePathMap[node.Path] = node;
+        }
+
+        if (node.Children != null)
+        {
+            foreach (var child in node.Children)
+            {
+                BuildNodePathMap(child);
+            }
+        }
+    }
+
+    // 선택된 Hdf5TreeNode 객체에 대한 정보를 가져오는 함수
+    private string GetNodeDisplayText(object context)
+    {
+        if (context is Hdf5TreeNode node)
+        {
+            if (node.NodeType == Hdf5NodeType.Dataset && node.Dimensions != null)
+            {
+                return $"{node.Name} [{string.Join(", ", node.Dimensions)}]";
+            }
+            if (node.NodeType == Hdf5NodeType.Group)
+            {
+                return $"{node.Name} (그룹)";
+            }
+            return node.Name;
+        }
+        return context?.ToString() ?? "";
+    }
+
+    // DxTreeViewNode를 생성하는 함수
+    private RenderFragment CreateTreeNode(Hdf5TreeNode node) => builder =>
+    {
+        builder.OpenComponent<DxTreeViewNode>(0);
+        builder.AddAttribute(1, "Text", node.Name);  // 텍스트는 단순히 이름만
+        builder.AddAttribute(2, "Name", node.Path);  // Name 속성은 경로 사용
+        builder.AddAttribute(3, "Data", node);       // 실제 노드 객체는 Data 속성으로 전달
+        builder.AddAttribute(4, "Expanded", node.Path == "/");  // 루트만 초기 확장
+
+        // 자식 노드가 있는 경우 추가
+        if (node.Children != null && node.Children.Any())
+        {
+            builder.AddAttribute(5, "Nodes", (RenderFragment)(childBuilder =>
+            {
+                int index = 0;
+                foreach (var child in node.Children)
+                {
+                    childBuilder.AddContent(index++, CreateTreeNode(child));
+                }
+            }));
+        }
+
+        builder.CloseComponent();
+    };
+
+    private string GetArrayPreview(object array)
+    {
+        var arrayObj = array as Array;
+        if (arrayObj == null) return "잘못된 배열";
+
+        // 작은 배열인 경우 전체 표시
+        if (arrayObj.Length <= 10)
+        {
+            return FormatArray(arrayObj);
+        }
+
+        // 큰 배열은 처음 5개와 마지막 5개만 표시
+        var preview = new List<string>();
+        for (int i = 0; i < 5; i++)
+        {
+            preview.Add(FormatValue(arrayObj.GetValue(i)));
+        }
+        preview.Add("...");
+        for (int i = Math.Max(5, arrayObj.Length - 5); i < arrayObj.Length; i++)
+        {
+            preview.Add(FormatValue(arrayObj.GetValue(i)));
+        }
+
+        return $"[{string.Join(", ", preview)}]";
+    }
+
+    private string FormatArray(Array array)
+    {
+        var values = new List<string>();
+        for (int i = 0; i < array.Length; i++)
+        {
+            values.Add(FormatValue(array.GetValue(i)));
+        }
+        return $"[{string.Join(", ", values)}]";
+    }
+
+    private string FormatValue(object? value)
+    {
+        if (value == null) return "null";
+        if (value is float f) return f.ToString("0.###");
+        if (value is double d) return d.ToString("0.###");
+        return value.ToString() ?? "";
+    }
+
+    private string FormatAttributeValue(object? value)
+    {
+        if (value == null) return "null";
+
+        // 에러 메시지인 경우 구분
+        if (value is string str && str.StartsWith("Error reading attribute"))
+        {
+            return str;
+        }
+
+        // 숫자 포맷팅
+        if (value is float f) return f.ToString("0.###");
+        if (value is double d) return d.ToString("0.###");
+
+        // 배열 포맷팅
+        if (value.GetType().IsArray)
+        {
+            return GetArrayPreview(value);
+        }
+
+        return value.ToString() ?? "";
+    }
+
+    private async Task OnNodeSelected(TreeViewNodeEventArgs args)
+    {
+        try
+        {
+            if (args.NodeInfo == null)
+            {
+                Console.WriteLine("NodeInfo가 null입니다.");
+                return;
+            }
+
+            string? nodePath = args.NodeInfo.Name;
+            Console.WriteLine($"선택된 노드 경로: {nodePath}");
+
+            if (string.IsNullOrEmpty(nodePath))
+            {
+                Console.WriteLine("선택된 노드의 경로가 null 또는 빈 문자열입니다.");
+                return;
+            }
+
+            if (nodePathMap.TryGetValue(nodePath, out var node))
+            {
+                currentNode = node;
+                await OnNodeClicked.InvokeAsync(currentNode);
+            }
+            else
+            {
+                Console.WriteLine($"경로 '{nodePath}'에 해당하는 노드를 찾을 수 없습니다.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"노드 선택 처리 중 오류: {ex.Message}");
+            Console.WriteLine($"스택 트레이스: {ex.StackTrace}");
+        }
+    }
+}

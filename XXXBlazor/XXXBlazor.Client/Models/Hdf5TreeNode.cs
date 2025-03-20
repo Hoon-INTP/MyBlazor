@@ -1,274 +1,127 @@
 
-using PureHDF;
-
 namespace XXXBlazor.Client.Models
 {
     /// <summary>
-    /// Enum for HDF5 node type
+    /// HDF5 파일 내의 객체 타입을 나타냅니다.
     /// </summary>
     public enum Hdf5NodeType
     {
-        NULL_NODE = -1,
         Group,
         Dataset,
-        Reserved01,
-        Reserved02,
-        Reserved03,
-        Reserved04,
-        Reserved05,
-        Other,
+        Attribute,
+        Unknown
     }
 
-    public class Hdf5FileModel
+    /// <summary>
+    /// HDF5 파일의 그룹, 데이터셋 등을 표현하는 기본 클래스입니다.
+    /// </summary>
+    public class Hdf5TreeNode
     {
         /// <summary>
-        /// MemoryStream for File
+        /// 노드 이름
         /// </summary>
-        //public required MemoryStream Memorystream { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
-        /// Name of the HDF5 file
+        /// 전체 경로
         /// </summary>
-        public required string FileName { get; set; }
+        public string Path { get; set; } = string.Empty;
 
         /// <summary>
-        /// Root group of the HDF5 file (the top-level group)
-        /// </summary>
-        public required Hdf5Group RootGroup { get; set; }
-
-        /// <summary>
-        /// Test Method for DEBUG : Prtint All Nodes in HDF5 File
-        /// </summary>
-        /// <param name="node">Hdf5Node</param>
-        /// <param name="indent">Indentation</param>
-        /// <returns>String</returns>
-        public string PrintAllNodes(Hdf5Node node, string indent = "", int depth = 0)
-        {
-            string result = indent;
-
-            for(int i = 0; i < depth; i++)
-            {
-                result += "  ";
-            }
-            result += node.Name + " (" + node.NodeType + ")" + ((node is Hdf5Dataset dataset1) ? (H5DataTypeClass)dataset1.DataType : "") + "\n";
-
-            if (node is Hdf5Group group)
-            {
-                foreach (var child in group.Children)
-                {
-                    result += PrintAllNodes(child, indent + "  ", depth + 1);
-                }
-            }
-            else if (node is Hdf5Dataset dataset)
-            {
-                result += "  " + dataset.GetPreview(depth + 1, false) + "\n";
-            }
-
-            return result;
-        }
-    }
-
-    public abstract class Hdf5Node
-    {
-        /// <summary>
-        /// Name of the node (example: "Group1", "Dataset2" etc.)
-        /// </summary>
-        public required string Name { get; set; }
-
-        /// <summary>
-        /// Full path of the node (including all parent names)
-        /// </summary>
-        public required string Path { get; set; }
-
-        /// <summary>
-        /// Type of the node
+        /// 노드 타입 (그룹, 데이터셋 등)
         /// </summary>
         public Hdf5NodeType NodeType { get; set; }
 
         /// <summary>
-        /// Reference to parent node
+        /// 자식 노드 목록 (그룹인 경우)
         /// </summary>
-        public Hdf5Node? Parent { get; set; }
+        public List<Hdf5TreeNode> Children { get; set; }
 
         /// <summary>
-        /// Attribute list of the node
+        /// 속성 목록
         /// </summary>
-        public List<Hdf5Attribute> Attributes { get; set; } = new List<Hdf5Attribute>();
+        public Dictionary<string, object> Attributes { get; set; }
 
         /// <summary>
-        /// Add an attribute to the node
+        /// 데이터셋인 경우 차원 정보
         /// </summary>
-        public void AddAttribute(string name, object value)
-        {
-            Attributes.Add(new Hdf5Attribute { Name = name, Value = value });
-        }
-    }
-
-    // Group Node : Contains other groups or datasets recursively
-    public class Hdf5Group : Hdf5Node
-    {
-        public Hdf5Group()
-        {
-            NodeType = Hdf5NodeType.Group;
-        }
+        public ulong[]? Dimensions { get; set; }
 
         /// <summary>
-        /// Child nodes of the group (can be groups or datasets, etc.)
+        /// 데이터셋의 데이터 타입
         /// </summary>
-        public List<Hdf5Node> Children { get; set; } = new List<Hdf5Node>();
+        public Type? DataType { get; set; }
 
         /// <summary>
-        /// Add a child node to the group (Connects the parent-child relationship)
+        /// 데이터셋 값 (데이터셋인 경우에만 유효)
         /// </summary>
-        /// <param name="node">추가할 자식 노드</param>
-        public void AddChild(Hdf5Node node)
-        {
-            node.Parent = this;
-            Children.Add(node);
-        }
-    }
+        public object? Data { get; set; }
 
-    // DataSet Node : Contains Data. End-point of the recursive path
-    public class Hdf5Dataset : Hdf5Node
-    {
-        public Hdf5Dataset()
+        /// <summary>
+        /// 기본 생성자
+        /// </summary>
+        public Hdf5TreeNode()
         {
-            NodeType = Hdf5NodeType.Dataset;
+            Children = new List<Hdf5TreeNode>();
+            Attributes = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Type of Data (ex: "int", "double", "string" , etc.)
+        /// 노드 정보를 문자열로 출력하는 메서드
         /// </summary>
-        public required byte DataType { get; set; }
-
-        /// <summary>
-        /// Dimensions of Dataset
-        /// </summary>
-        public required ulong[] Dimensions { get; set; }
-
-        /// <summary>
-        /// Check data already loaded or not
-        /// </summary>
-        public bool IsDataLoaded { get; private set; }
-
-        /// <summary>
-        /// 데이터셋 ID (데이터 로드 시 사용)
-        /// </summary>
-        public long DatasetId { get; set; }
-
-        /// <summary>
-        /// Real Data. Can type-change if need
-        /// </summary>
-        private object? _data;
-        public object? Data
+        public override string ToString()
         {
-            get => _data;
-            set
+            return $"{NodeType}: {Path}";
+        }
+
+        /// <summary>
+        /// 전체 트리 구조를 문자열로 출력하는 메서드
+        /// </summary>
+        public string ToTreeString(int indent = 0)
+        {
+            var indentStr = new string(' ', indent * 2);
+            var result = $"{indentStr}{ToString()}";
+
+            if (NodeType == Hdf5NodeType.Dataset && Dimensions != null)
             {
-                _data = value;
-                IsDataLoaded = value != null;
-            }
-        }
-
-        /// <summary>
-        /// 데이터를 지연 로딩하는 메서드
-        /// </summary>
-        public void LoadData(Func<Hdf5Dataset, object> dataLoader)
-        {
-            if (!IsDataLoaded)
-            {
-                Data = dataLoader(this);
-            }
-        }
-
-        /// <summary>
-        /// 데이터셋의 미리보기 (요약) 제공
-        /// </summary>
-        /// <returns>데이터 요약 정보</returns>
-        public string GetPreview(int depth, bool isPreview = true)
-        {
-            string result = "";
-
-            for(int i = 0; i < depth; i++)
-            {
-                result += "  ";
-            }
-
-            if (IsDataLoaded && Data != null)
-            {
-                // 데이터가 이미 로드된 경우, 간략한 미리보기 반환
-                return result + "데이터 로드됨: " + GetDataSummary(isPreview);
-            }
-            else
-            {
-                // 데이터가 로드되지 않은 경우, 크기 정보만 반환
-                return result + $"Dataset [Name : {Name}] [Path: {Path}] [Size: {string.Join(" x ", Dimensions)}] [Type : {DataType}] [Dimension : {Dimensions.Length}]";
-            }
-        }
-
-        /// <summary>
-        /// 데이터 요약 정보 생성 (타입에 따라 다르게 처리)
-        /// </summary>
-        private string GetDataSummary(bool isPreview)
-        {
-            if (Data == null) return "null";
-
-            // 배열 타입인 경우
-            if (Data.GetType().IsArray)
-            {
-                Array array = (Array)Data;
-                if (array.Length == 0) return "빈 배열";
-
-                // 1차원 배열인 경우
-                if (array.Rank == 1)
+                result += $" [{string.Join(", ", Dimensions)}]";
+                if (DataType != null)
                 {
-                    int previewCount = isPreview ? Math.Min(5, array.Length) : array.Length ;
-                    var preview = new object[previewCount];
-                    Array.Copy(array, preview, previewCount);
-
-                    string result = $"[{string.Join(", ", preview)}";
-                    if ( isPreview && array.Length > previewCount)
-                        result += ", ...";
-                    result += "]";
-                    return result;
+                    result += $" ({DataType.Name})";
                 }
-
-                // 다차원 배열인 경우
-                return $"{array.Rank}차원 배열, 총 요소 수: {array.Length}";
             }
 
-            // 기타 타입
-            return Data.ToString() ?? "알 수 없는 데이터";
-        }
+            result += Environment.NewLine;
 
-        /// <summary>
-        /// Get Data Array
-        /// </summary>
-        /// <returns>Array</returns>
-        public Array GetDataArray()
-        {
-            if (Data == null) return null;
-
-            if (Data.GetType().IsArray)
+            if (Attributes.Count > 0)
             {
-                return (Array)Data;
+                result += $"{indentStr}  [Attributes: {string.Join(", ", Attributes.Keys)}]{Environment.NewLine}";
             }
 
-            return null;
+            foreach (var child in Children)
+            {
+                result += child.ToTreeString(indent + 1);
+            }
+
+            return result;
         }
-    }
-
-    // Attribute
-    public class Hdf5Attribute
-    {
-        /// <summary>
-        /// Name of Attribute
-        /// </summary>
-        public required string Name { get; set; }
 
         /// <summary>
-        /// Value of Attribute
+        /// 데이터셋 노드의 데이터를 다차원 배열로 변환하여 반환
         /// </summary>
-        public required object Value { get; set; }
+        /// <typeparam name="T">데이터 타입</typeparam>
+        /// <returns>다차원 배열</returns>
+        public Array? GetDataAsMultidimensional<T>() where T : unmanaged
+        {
+            if (NodeType != Hdf5NodeType.Dataset)
+                throw new InvalidOperationException("이 메서드는 데이터셋 노드에서만 사용할 수 있습니다.");
+
+            if (Data is T[] typedArray && Dimensions != null)
+            {
+                return Hdf5ArrayHelper.ConvertToMultidimensionalArray(typedArray, Dimensions);
+            }
+
+            throw new InvalidOperationException($"데이터를 {typeof(T).Name} 타입으로 변환할 수 없습니다.");
+        }
     }
 }

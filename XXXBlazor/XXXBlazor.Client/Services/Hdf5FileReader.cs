@@ -1,799 +1,521 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using PureHDF;
+using PureHDF.Selections;
 using XXXBlazor.Client.Models;
 
 namespace XXXBlazor.Client.Services
 {
+    /// <summary>
+    /// HDF5 파일 읽기 구현 클래스
+    /// </summary>
     public class Hdf5FileReader : IHdf5FileReader
     {
         /// <summary>
-        /// Convert MemoryStream of HDF5 File to Hdf5FileModel
+        /// 파일 경로에서 HDF5 파일을 로드하여 루트 노드를 반환합니다.
         /// </summary>
-        /// <param name="stream">MemoryStream of HDF5 File</param>
-        /// <param name="fileName">HDF5 File Name</param>
-        /// <returns>Hdf5FileModel</returns>
-        public Hdf5FileModel ReadHdf5FromStream(MemoryStream stream, string fileName)
+        /// <param name="filePath">HDF5 파일 경로</param>
+        /// <returns>HDF5 파일의 루트 노드</returns>
+        public Hdf5TreeNode LoadFromFile(string filePath)
         {
-            using var root = H5File.Open(stream);
-
-            var rootGroup = ReadGroup(root.Group(root.Name), "/");
-
-            rootGroup.Name = fileName;
-
-            var fileModel = new Hdf5FileModel
+            var rootNode = new Hdf5TreeNode
             {
-                FileName = fileName,
-                RootGroup = rootGroup
+                Name = "/",
+                Path = "/",
+                NodeType = Hdf5NodeType.Group,
+                Children = new List<Hdf5TreeNode>()
             };
 
-            return fileModel;
+            using (var h5File = H5File.OpenRead(filePath))
+            {
+                // 루트 그룹에서 시작하여 재귀적으로 모든 항목을 탐색
+                var rootGroup = h5File.Group("/");
+                ReadGroup(rootGroup, rootNode, "/");
+            }
+
+            return rootNode;
         }
 
         /// <summary>
-        /// Convert MemoryStream of HDF5 File to Hdf5FileModel
+        /// 메모리 스트림에서 HDF5 파일을 로드하여 루트 노드를 반환합니다.
         /// </summary>
-        /// <param name="path">Path of temporary file</param>
-        /// <param name="fileName">HDF5 file name</param>
-        /// <returns>Hdf5FileModel</returns>
-        public Hdf5FileModel ReadHdf5FromTempFile(string path, string fileName)
+        /// <param name="stream">HDF5 데이터가 포함된 메모리 스트림</param>
+        /// <returns>HDF5 파일의 루트 노드</returns>
+        public Hdf5TreeNode LoadFromStream(MemoryStream stream)
         {
-            using var root = H5File.OpenRead(path);
-
-            var rootGroup = ReadGroup(root.Group(root.Name), "/");
-
-            rootGroup.Name = fileName;
-
-            var fileModel = new Hdf5FileModel
+            var rootNode = new Hdf5TreeNode
             {
-                FileName = fileName,
-                RootGroup = rootGroup
+                Name = "/",
+                Path = "/",
+                NodeType = Hdf5NodeType.Group,
+                Children = new List<Hdf5TreeNode>()
             };
 
-            return fileModel;
+            using (var h5File = H5File.Open(stream))
+            {
+                // 루트 그룹에서 시작하여 재귀적으로 모든 항목을 탐색
+                var rootGroup = h5File.Group("/");
+                ReadGroup(rootGroup, rootNode, "/");
+            }
+
+            return rootNode;
         }
 
         /// <summary>
-        /// Convert Group information to Hdf5Group
+        /// 데이터셋에서 특정 부분만 읽습니다.
         /// </summary>
-        /// <param name="iH5Group">PureHDF Group interface</param>
-        /// <param name="groupPath">Group Path</param>
-        /// <returns>Hdf5Group</returns>
-        private Hdf5Group ReadGroup(IH5Group iH5Group, string groupPath)
+        /// <typeparam name="T">데이터 타입</typeparam>
+        /// <param name="filePath">HDF5 파일 경로</param>
+        /// <param name="datasetPath">데이터셋 경로</param>
+        /// <param name="start">시작 인덱스 배열</param>
+        /// <param name="count">요소 개수 배열</param>
+        /// <returns>읽은 데이터 배열</returns>
+        public T[] ReadDatasetRegion<T>(string filePath, string datasetPath, ulong[] start, ulong[] count) where T : unmanaged
         {
-
-            string groupName = groupPath == "/" ? "/" : Path.GetFileName(groupPath);
-            var group = new Hdf5Group
+            using (var h5File = H5File.OpenRead(filePath))
             {
-                Name = groupName,
-                Path = groupPath
-            };
+                // 경로가 /로 시작하면 제거 (PureHDF는 루트 경로를 빈 문자열로 처리)
+                if (datasetPath.StartsWith("/"))
+                    datasetPath = datasetPath.Substring(1);
 
-            IEnumerable<IH5Attribute> attributes = iH5Group.Attributes();
-            if (!attributes.Any())
-            {
+                var dataset = h5File.Dataset(datasetPath);
+
+                // 하이퍼슬랩 선택 생성
+                var hyperslab = new HyperslabSelection(
+                    rank: start.Length,
+                    starts: start,
+                    blocks: count);
+
+                return dataset.Read<T[]>(fileSelection: hyperslab);
             }
-            else
+        }
+
+        /// <summary>
+        /// 데이터셋을 다차원 배열로 반환합니다.
+        /// </summary>
+        /// <typeparam name="T">데이터 타입</typeparam>
+        /// <param name="filePath">HDF5 파일 경로</param>
+        /// <param name="datasetPath">데이터셋 경로</param>
+        /// <returns>차원 정보에 맞게 변환된 다차원 배열</returns>
+        public Array ReadDatasetAsMultidimensional<T>(string filePath, string datasetPath) where T : unmanaged
+        {
+            using (var h5File = H5File.OpenRead(filePath))
             {
-                foreach (var attribute in attributes)
-                {
-                    string attrName = attribute.Name;
-                    H5DataTypeClass attrType = attribute.Type.Class;
+                // 경로가 /로 시작하면 제거 (PureHDF는 루트 경로를 빈 문자열로 처리)
+                if (datasetPath.StartsWith("/"))
+                    datasetPath = datasetPath.Substring(1);
 
-                    switch(attrType)
-                    {
-                        case H5DataTypeClass.String: // fixed-Length String
-                        {
-                            string strValue = attribute.Read<string>();
-                            group.AddAttribute(attrName, strValue);
-                            break;
-                        }
+                var dataset = h5File.Dataset(datasetPath);
+                var dimensions = dataset.Space.Dimensions;
 
-                        case H5DataTypeClass.VariableLength: // variable-Length String
-                        {
-                            string varValue = attribute.Read<string>();
-                            group.AddAttribute(attrName, varValue);
-                            break;
-                        }
+                // 1D 배열로 먼저 데이터 읽기
+                T[] rawData = dataset.Read<T[]>();
 
-                        case H5DataTypeClass.FixedPoint:
-                        {
-                            if (attribute.Type.Size == 1)
-                            {
-                                byte byteValue = attribute.Read<byte>();
-                                group.AddAttribute(attrName, byteValue);
-                            }
-                            else if (attribute.Type.Size == 2)
-                            {
-                                short shortValue = attribute.Read<short>();
-                                group.AddAttribute(attrName, shortValue);
-                            }
-                            else if (attribute.Type.Size == 8)
-                            {
-                                long longValue = attribute.Read<long>();
-                                group.AddAttribute(attrName, longValue);
-                            }
-                            else
-                            {
-                                int intValue = attribute.Read<int>();
-                                group.AddAttribute(attrName, intValue);
-                            }
-
-                            break;
-                        }
-
-                        case H5DataTypeClass.FloatingPoint:
-                        {
-                            if (attribute.Type.Size == 4)
-                            {
-                                float floatValue = attribute.Read<float>();
-                                group.AddAttribute(attrName, floatValue);
-                            }
-                            else
-                            {
-                                double doubleValue = attribute.Read<double>();
-                                group.AddAttribute(attrName, doubleValue);
-                            }
-
-                            break;
-                        }
-
-                        default:
-                        {
-                            Console.WriteLine($"Not Supported Type: {groupName} - {attrType} for {attrName}");
-                            break;
-                        }
-                    }
-                }
+                // 차원 정보에 따라 다차원 배열로 변환
+                return Hdf5ArrayHelper.ConvertToMultidimensionalArray(rawData, dimensions);
             }
+        }
 
-            IEnumerable<IH5Object> childrens = iH5Group.Children();
+        /// <summary>
+        /// 데이터셋의 부분 영역을 다차원 배열로 반환합니다.
+        /// </summary>
+        /// <typeparam name="T">데이터 타입</typeparam>
+        /// <param name="filePath">HDF5 파일 경로</param>
+        /// <param name="datasetPath">데이터셋 경로</param>
+        /// <param name="start">시작 인덱스 배열</param>
+        /// <param name="count">요소 개수 배열</param>
+        /// <returns>차원 정보에 맞게 변환된 다차원 배열</returns>
+        public Array ReadDatasetRegionAsMultidimensional<T>(string filePath, string datasetPath, ulong[] start, ulong[] count) where T : unmanaged
+        {
+            using (var h5File = H5File.OpenRead(filePath))
+            {
+                // 경로가 /로 시작하면 제거 (PureHDF는 루트 경로를 빈 문자열로 처리)
+                if (datasetPath.StartsWith("/"))
+                    datasetPath = datasetPath.Substring(1);
 
-            childrens.ToList().ForEach(child =>{
-                string childName = child.Name;
-                string memberPath = groupPath == "/" ? $"/{childName}" : $"{groupPath}/{childName}";
+                var dataset = h5File.Dataset(datasetPath);
 
-                if (child is IH5Group)
+                // 하이퍼슬랩 선택 생성
+                var hyperslab = new HyperslabSelection(
+                    rank: start.Length,
+                    starts: start,
+                    blocks: count);
+
+                // 1D 배열로 먼저 데이터 읽기
+                T[] rawData = dataset.Read<T[]>(fileSelection: hyperslab);
+
+                // 변환할 때는 count를 차원으로 사용
+                return Hdf5ArrayHelper.ConvertToMultidimensionalArray(rawData, count);
+            }
+        }
+
+        /// <summary>
+        /// HDF5 그룹을 재귀적으로 읽는 메서드
+        /// </summary>
+        private void ReadGroup(IH5Group h5Group, Hdf5TreeNode parentNode, string currentPath)
+        {
+            // 그룹 속성 읽기
+            ReadAttributes(h5Group, parentNode);
+
+            // 그룹 내 모든 자식 항목 탐색
+            foreach (var childObj in h5Group.Children())
+            {
+                string childName = childObj.Name;
+                string childPath = currentPath.EndsWith("/") ? $"{currentPath}{childName}" : $"{currentPath}/{childName}";
+
+                if (childObj is IH5Group childGroup)
                 {
-                    Hdf5Group subgroup = ReadGroup((IH5Group)child, memberPath);
-                    group.AddChild(subgroup);
-                }
-                else if (child is IH5Dataset)
-                {
-                    Hdf5Dataset dataset = ReadDataset((IH5Dataset)child, childName, memberPath);
-                    group.AddChild(dataset);
-                }
-                else
-                {
-                    var otherNode = new Hdf5Group
+                    var groupNode = new Hdf5TreeNode
                     {
                         Name = childName,
-                        Path = memberPath,
-                        NodeType = Hdf5NodeType.Other
+                        Path = childPath,
+                        NodeType = Hdf5NodeType.Group,
+                        Children = new List<Hdf5TreeNode>()
                     };
 
-                    group.AddChild(otherNode);
+                    parentNode.Children.Add(groupNode);
+                    ReadGroup(childGroup, groupNode, childPath);
                 }
-            });
-
-/*
-            // Process all children objects in the group
-            foreach (var childName in h5Group.ChildrenNames)
-            {
-                string memberPath = groupPath == "/" ? $"/{childName}" : $"{groupPath}/{childName}";
-
-                // PureHDF has direct object type checking
-                if (h5Group.GroupExists(childName))
+                else if (childObj is IH5Dataset childDataset)
                 {
-                    var childGroup = h5Group.Group(childName);
-                    Hdf5Group subgroup = ReadGroup(childGroup, memberPath);
-                    group.Children.Add(subgroup);
-                }
-                else if (h5Group.DatasetExists(childName))
-                {
-                    var childDataset = h5Group.Dataset(childName);
-                    Hdf5Dataset dataset = ReadDataset(childDataset, childName, memberPath);
-                    group.Children.Add(dataset);
-                }
-                else
-                {
-                    // Handle other types (like named datatypes, etc.)
-                    var otherNode = new Hdf5Group
-                    {
-                        Name = childName,
-                        Path = memberPath,
-                        NodeType = Models.Hdf5NodeType.Other
-                    };
-
-                    // We don't have a direct object to read attributes from for "other" types
-                    group.AddChild(otherNode);
+                    ReadDataset(childDataset, parentNode, childPath);
                 }
             }
-*/
-            return group;
         }
 
         /// <summary>
-        /// Convert Dataset information to Hdf5Dataset
+        /// 데이터셋을 읽는 메서드
         /// </summary>
-        /// <param name="iH5Dataset">PureHDF Dataset object</param>
-        /// <param name="name">Dataset Name</param>
-        /// <param name="path">Dataset Path</param>
-        /// <returns>Hdf5Dataset</returns>
-        private Hdf5Dataset ReadDataset(IH5Dataset iH5Dataset, string name, string path)
+        private void ReadDataset(IH5Dataset dataset, Hdf5TreeNode parentNode, string datasetPath)
         {
-            // Get data type information
-            H5DataTypeClass type = iH5Dataset.Type.Class;
-            byte dataType = (byte)type;
-
-            // Get dimensions
-            ulong[] dimensions = iH5Dataset.Space.Dimensions;
-
-            var dataset = new Hdf5Dataset
+            var datasetName = dataset.Name;
+            var datasetNode = new Hdf5TreeNode
             {
-                Name = name,
-                Path = path,
-                DataType = dataType,
-                Dimensions = dimensions,
+                Name = datasetName,
+                Path = datasetPath,
+                NodeType = Hdf5NodeType.Dataset,
+                Dimensions = dataset.Space.Dimensions
             };
 
-            IEnumerable<IH5Attribute> attributes = iH5Dataset.Attributes();
-            if (!attributes.Any())
-            {
-            }
-            else
-            {
-                foreach (var attribute in attributes)
-                {
-                    string attrName = attribute.Name;
-                    H5DataTypeClass attrType = attribute.Type.Class;
+            // 데이터 타입 설정
+            datasetNode.DataType = GetDataType(dataset);
 
-                    switch(attrType)
-                    {
-                        case H5DataTypeClass.String: // fixed-Length String
-                        {
-                            string strValue = attribute.Read<string>();
-                            dataset.AddAttribute(attrName, strValue);
-                            break;
-                        }
+            // 데이터셋 속성 읽기
+            ReadAttributes(dataset, datasetNode);
 
-                        case H5DataTypeClass.VariableLength: // variable-Length String
-                        {
-                            string varValue = attribute.Read<string>();
-                            dataset.AddAttribute(attrName, varValue);
-                            break;
-                        }
-
-                        case H5DataTypeClass.FixedPoint:
-                        {
-                            if (attribute.Type.Size == 1)
-                            {
-                                byte byteValue = attribute.Read<byte>();
-                                dataset.AddAttribute(attrName, byteValue);
-                            }
-                            else if (attribute.Type.Size == 2)
-                            {
-                                short shortValue = attribute.Read<short>();
-                                dataset.AddAttribute(attrName, shortValue);
-                            }
-                            else if (attribute.Type.Size == 8)
-                            {
-                                long longValue = attribute.Read<long>();
-                                dataset.AddAttribute(attrName, longValue);
-                            }
-                            else
-                            {
-                                int intValue = attribute.Read<int>();
-                                dataset.AddAttribute(attrName, intValue);
-                            }
-
-                            break;
-                        }
-
-                        case H5DataTypeClass.FloatingPoint:
-                        {
-                            if (attribute.Type.Size == 4)
-                            {
-                                float floatValue = attribute.Read<float>();
-                                dataset.AddAttribute(attrName, floatValue);
-                            }
-                            else
-                            {
-                                double doubleValue = attribute.Read<double>();
-                                dataset.AddAttribute(attrName, doubleValue);
-                            }
-
-                            break;
-                        }
-
-                        default:
-                        {
-                            Console.WriteLine($"Not Supported Type: {name} - {attrType} for {attrName}");
-                            break;
-                        }
-                    }
-                }
-            }
-
-            switch(type)
-            {
-                case H5DataTypeClass.FixedPoint:
-                {
-                    if (iH5Dataset.Type.Size == 1)
-                    {
-                        dataset.Data = ReadFixedPointData<byte>(iH5Dataset);
-                    }
-                    else if (iH5Dataset.Type.Size == 2)
-                    {
-                        dataset.Data = ReadFixedPointData<short>(iH5Dataset);
-                    }
-                    else if (iH5Dataset.Type.Size == 8)
-                    {
-                        dataset.Data = ReadFixedPointData<long>(iH5Dataset);
-                    }
-                    else
-                    {
-                        dataset.Data = ReadFixedPointData<int>(iH5Dataset);
-                    }
-
-                    break;
-                }
-
-                case H5DataTypeClass.FloatingPoint:
-                {
-                    if (iH5Dataset.Type.Size == 4)
-                    {
-                        dataset.Data = ReadFloatingPointData<float>(iH5Dataset);
-                    }
-                    else
-                    {
-                        dataset.Data = ReadFloatingPointData<double>(iH5Dataset);
-                    }
-
-                    break;
-                }
-
-                case H5DataTypeClass.String:
-                {
-                    dataset.Data = ReadStringData(iH5Dataset);
-                    break;
-                }
-
-                case H5DataTypeClass.VariableLength:
-                {
-                    dataset.Data = ReadVariableLengthData(iH5Dataset);
-                    break;
-                }
-
-                case H5DataTypeClass.Compound:
-                {
-                    dataset.Data = ReadCompoundData(iH5Dataset);
-                    break;
-                }
-
-                default:
-                {
-                    Console.WriteLine($"Not Supported Type: {name} - {type}");
-                    break;
-                }
-            }
-
-            return dataset;
-        }
-
-        /// <summary>
-        /// Read Fixed Point Data
-        /// </summary>///
-        private Array ReadFixedPointData<T>(IH5Dataset dataset) where T : struct
-        {
-            ulong[] dimensions = dataset.Space.Dimensions;
-
-            if (dimensions.Length == 1)
-            {
-                T[] data = dataset.Read<T[]>();
-                return data;
-            }
-            else if (dimensions.Length == 2)
-            {
-                T[,] data = dataset.Read<T[,]>();
-                return data;
-            }
-            else if (dimensions.Length == 3)
-            {
-                T[,,] data = dataset.Read<T[,,]>();
-                return data;
-            }
-            else
-            {
-                Console.WriteLine($"Not Supported Rank : {dimensions.Length}");
-                return Array.Empty<T>();
-            }
-        }
-
-        /// <summary>
-        /// Read Floating Point Data
-        /// </summary>
-        private Array ReadFloatingPointData<T>(IH5Dataset dataset) where T : struct
-        {
-            ulong[] dimensions = dataset.Space.Dimensions;
-
-            if (dimensions.Length == 1)
-            {
-                T[] data = dataset.Read<T[]>();
-                return data;
-            }
-            else if (dimensions.Length == 2)
-            {
-                T[,] data = dataset.Read<T[,]>();
-                return data;
-            }
-            else if (dimensions.Length == 3)
-            {
-                T[,,] data = dataset.Read<T[,,]>();
-                return data;
-            }
-            else
-            {
-                Console.WriteLine($"Not Supported Rank : {dimensions.Length}");
-                return Array.Empty<T>();
-            }
-        }
-
-        /// <summary>
-        /// Read String Length Data
-        /// </summary>
-        private Array ReadStringData(IH5Dataset dataset)
-        {
-            ulong[] dimensions = dataset.Space.Dimensions;
-
-            if (dimensions.Length == 1)
-            {
-                string[] data = dataset.Read<string[]>();
-                return data;
-            }
-            else if (dimensions.Length == 2)
-            {
-                try
-                {
-                    string[,] data = dataset.Read<string[,]>();
-                    return data;
-                }
-                catch
-                {
-                    string[] flatData = dataset.Read<string[]>();
-                    string[,] data = new string[(int)dimensions[0], (int)dimensions[1]];
-
-                    for (int i = 0; i < (int)dimensions[0]; i++)
-                    {
-                        for (int j = 0; j < (int)dimensions[1]; j++)
-                        {
-                            data[i, j] = flatData[i * (int)dimensions[1] + j];
-                        }
-                    }
-
-                    return data;
-                }
-            }
-            else
-            {
-                throw new NotSupportedException($"문자열 데이터의 차원 수 {dimensions.Length}는 현재 지원되지 않습니다.");
-            }
-        }
-
-        /// <summary>
-        /// Read VariableLength Data
-        /// </summary>
-        private Array ReadVariableLengthData(IH5Dataset dataset)
-        {
-            // 가변 길이 데이터는 특별한 처리가 필요할 수 있음
+            // 데이터 읽기
             try
             {
-                string[] data = dataset.Read<string[]>();
-                return data;
+                datasetNode.Data = ReadDatasetValue(dataset);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"가변 길이 데이터 읽기 오류: {ex.Message}");
-                return Array.Empty<string>();
+                datasetNode.Data = $"Error reading data: {ex.Message}";
+            }
+
+            parentNode.Children.Add(datasetNode);
+        }
+
+        /// <summary>
+        /// 속성을 읽는 메서드
+        /// </summary>
+        private void ReadAttributes(IH5Object obj, Hdf5TreeNode node)
+        {
+            try
+            {
+                // IH5Object.Attributes() 메서드를 사용하여 모든 속성 가져오기
+                foreach (var attribute in obj.Attributes())
+                {
+                    try
+                    {
+                        // 속성 데이터 타입에 따라 적절히 변환
+                        if (attribute.Type.Size > 0)
+                        {
+                            var value = ReadAttributeWithProperType(attribute);
+                            node.Attributes[attribute.Name] = value;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // 속성 읽기에 실패하면 오류 메시지 저장
+                        node.Attributes[attribute.Name] = $"Error reading attribute: {ex.Message}";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // 속성 목록 읽기 자체가 실패한 경우
+                node.Attributes["_error"] = $"Error reading attributes: {ex.Message}";
             }
         }
 
         /// <summary>
-        /// Read Compound Data
+        /// 적절한 타입으로 속성 값을 읽는 메서드
         /// </summary>
-        private object ReadCompoundData(IH5Dataset dataset)
+        private object ReadAttributeWithProperType(IH5Attribute attribute)
         {
-
-            //try
-            //{
-            //    // PureHDF의 복합 데이터 처리 방식에 따라 구현
-            //    // 예: 사용자 정의 구조체 또는 동적 객체 배열 반환
-            //
-            //    // 복합 필드 정보 가져오기
-            //    H5CompoundType compoundType = dataset.Type as H5CompoundType;
-            //    if (compoundType != null)
-            //    {
-            //        // 필드 정보 출력 (실제 구현에서는 이 정보를 사용하여 데이터 구조화)
-            //        foreach (var field in compoundType.Members)
-            //        {
-            //            Console.WriteLine($"필드 이름: {field.Name}, 유형: {field.Type.Class}, 오프셋: {field.Offset}");
-            //        }
-            //    }
-            //
-            //    // 여기서는 간단히 바이트 배열로 읽어서 반환
-            //    // 실제 사용에서는 적절한 구조로 변환 필요
-            //    byte[] rawData = dataset.Read<byte[]>();
-            //    return rawData;
-            //
-            //    // 대안: 동적 객체 배열 생성 (실제 구현에서 구체화 필요)
-            //    // var records = new List<Dictionary<string, object>>();
-            //    // return records.ToArray();
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine($"복합 데이터 읽기 오류: {ex.Message}");
-            //    return null;
-            //}
-
-            return null;
-        }
-
-/*
-        /// <summary>
-        /// Load Dataset real data (for lazy load)
-        /// </summary>
-        public void LoadDatasetData(Hdf5Dataset dataset)
-        {
-            if (dataset.IsDataLoaded)
-                return;
-
-            // PureHDF uses disposable objects
-            using var h5File = H5File.OpenRead(dataset.FilePath ?? GetFilePathFromDatasetPath(dataset.Path));
-
-            // Get the dataset using its path
-            var h5Dataset = h5File.Get<H5Dataset>(dataset.Path);
-            if (h5Dataset == null)
-                throw new Exception($"데이터셋을 열 수 없습니다: {dataset.Path}");
-
-            LoadDataForDataset(dataset, h5Dataset);
-        }
-
-        /// <summary>
-        /// Extract File Path from Dataset Path
-        /// </summary>
-        private string GetFilePathFromDatasetPath(string datasetPath)
-        {
-            throw new NotImplementedException("파일 경로 관리 로직이 필요합니다.");
-        }
-
-        /// <summary>
-        /// Load data to Dataset
-        /// </summary>
-        private void LoadDataForDataset(Hdf5Dataset dataset, IH5Dataset h5Dataset)
-        {
-            // PureHDF has a type system that maps HDF5 types to .NET types
-            var typeClass = h5Dataset.Type.Class;
-
-            object data;
-
-            // PureHDF provides generics-based reading
-            switch (typeClass)
+            // 속성 데이터 타입에 따라 적절한 타입으로 변환
+            if (attribute.Type.Class == H5DataTypeClass.FixedPoint)
             {
-                case H5DataTypeClass.Integer:
-                    if (h5Dataset.Type.IsUnsigned)
+                if (!attribute.Type.FixedPoint.IsSigned)
+                {
+                    switch (attribute.Type.Size)
                     {
-                        data = ReadUnsignedIntegerData(h5Dataset, dataset.Dimensions);
+                        case 1: return attribute.Read<byte>();
+                        case 2: return attribute.Read<ushort>();
+                        case 4: return attribute.Read<uint>();
+                        case 8: return attribute.Read<ulong>();
+                        default: return $"Unsupported unsigned integer size: {attribute.Type.Size}";
+                    }
+                }
+                else
+                {
+                    switch (attribute.Type.Size)
+                    {
+                        case 1: return attribute.Read<sbyte>();
+                        case 2: return attribute.Read<short>();
+                        case 4: return attribute.Read<int>();
+                        case 8: return attribute.Read<long>();
+                        default: return $"Unsupported signed integer size: {attribute.Type.Size}";
+                    }
+                }
+            }
+            else if (attribute.Type.Class == H5DataTypeClass.FloatingPoint)
+            {
+                switch (attribute.Type.Size)
+                {
+                    case 4: return attribute.Read<float>();
+                    case 8: return attribute.Read<double>();
+                    default: return $"Unsupported float size: {attribute.Type.Size}";
+                }
+            }
+            else if (attribute.Type.Class == H5DataTypeClass.String ||
+                     attribute.Type.Class == H5DataTypeClass.VariableLength)
+            {
+                try
+                {
+                    return attribute.Read<string>();
+                }
+                catch
+                {
+                    try
+                    {
+                        // 문자열 배열일 수도 있음
+                        return string.Join(", ", attribute.Read<string[]>());
+                    }
+                    catch
+                    {
+                        return "Error reading string attribute";
+                    }
+                }
+            }
+            else if (attribute.Type.Class == H5DataTypeClass.BitField)
+            {
+                return attribute.Read<bool>();
+            }
+            else if (attribute.Type.Class == H5DataTypeClass.Compound)
+            {
+                return "Compound data type";
+            }
+            else if (attribute.Type.Class == H5DataTypeClass.Array)
+            {
+                // 배열 타입 처리
+                try
+                {
+                    // 기본적으로 object[]로 읽고 문자열로 변환
+                    var arrayData = attribute.Read<object[]>();
+                    return $"Array[{arrayData.Length}]: {string.Join(", ", arrayData.Take(5))}...";
+                }
+                catch
+                {
+                    return "Array data (not displayable)";
+                }
+            }
+
+            // 기타 타입은 일반적인 방식으로 처리
+            try
+            {
+                return attribute.Read<object>();
+            }
+            catch
+            {
+                return $"Data of type {attribute.Type.Class} (not displayable)";
+            }
+        }
+
+        /// <summary>
+        /// 데이터셋 타입을 결정하는 메서드
+        /// </summary>
+        private Type GetDataType(IH5Dataset dataset)
+        {
+            // PureHDF의 타입 정보를 활용하여 .NET 타입으로 변환
+            var dataType = dataset.Type;
+
+            if (dataType.Class == H5DataTypeClass.FixedPoint)
+            {
+                if (!dataset.Type.FixedPoint.IsSigned)
+                {
+                    switch (dataType.Size)
+                    {
+                        case 1: return typeof(byte);
+                        case 2: return typeof(ushort);
+                        case 4: return typeof(uint);
+                        case 8: return typeof(ulong);
+                        default: return typeof(object);
+                    }
+                }
+                else
+                {
+                    switch (dataType.Size)
+                    {
+                        case 1: return typeof(sbyte);
+                        case 2: return typeof(short);
+                        case 4: return typeof(int);
+                        case 8: return typeof(long);
+                        default: return typeof(object);
+                    }
+                }
+            }
+            else if (dataType.Class == H5DataTypeClass.FloatingPoint)
+            {
+                switch (dataType.Size)
+                {
+                    case 4: return typeof(float);
+                    case 8: return typeof(double);
+                    default: return typeof(object);
+                }
+            }
+            else if (dataType.Class == H5DataTypeClass.String)
+            {
+                return typeof(string);
+            }
+            else if (dataType.Class == H5DataTypeClass.BitField)
+            {
+                return typeof(bool);
+            }
+            else
+            {
+                return typeof(object);
+            }
+        }
+
+        /// <summary>
+        /// 데이터셋 값을 읽는 메서드
+        /// </summary>
+        private object ReadDatasetValue(IH5Dataset dataset)
+        {
+            // 타입과 크기에 따라 적절한 방법으로 데이터를 읽음
+            bool isScalar = dataset.Space.Rank == 0 ||
+                (dataset.Space.Dimensions.Length == 1 && dataset.Space.Dimensions[0] == 1);
+
+            if (isScalar)
+            {
+                // 스칼라 값
+                if (dataset.Type.Class == H5DataTypeClass.FixedPoint)
+                {
+                    if (!dataset.Type.FixedPoint.IsSigned)
+                    {
+                        switch (dataset.Type.Size)
+                        {
+                            case 1: return dataset.Read<byte>();
+                            case 2: return dataset.Read<ushort>();
+                            case 4: return dataset.Read<uint>();
+                            case 8: return dataset.Read<ulong>();
+                        }
                     }
                     else
                     {
-                        data = ReadIntegerData(h5Dataset, dataset.Dimensions);
-                    }
-                    break;
-                case H5DataTypeClass.Float:
-                    data = ReadFloatData(h5Dataset, dataset.Dimensions);
-                    break;
-                case H5DataTypeClass.String:
-                    data = ReadStringData(h5Dataset, dataset.Dimensions);
-                    break;
-                default:
-                    data = $"지원되지 않는 데이터 타입: {typeClass}";
-                    break;
-            }
-
-            dataset.Data = data;
-            dataset.IsDataLoaded = true;
-        }
-
-        /// <summary>
-        /// Read Integer Data
-        /// </summary>
-        private object ReadIntegerData(IH5Dataset dataset, int[] dimensions)
-        {
-            // PureHDF has type-safe read methods
-            if (dimensions.Length == 1)
-            {
-                return dataset.Read<int[]>();
-            }
-            else if (dimensions.Length == 2)
-            {
-                var data = dataset.Read<int[]>();
-                int[,] array2D = new int[dimensions[0], dimensions[1]];
-
-                for (int i = 0; i < dimensions[0]; i++)
-                {
-                    for (int j = 0; j < dimensions[1]; j++)
-                    {
-                        array2D[i, j] = data[i * dimensions[1] + j];
+                        switch (dataset.Type.Size)
+                        {
+                            case 1: return dataset.Read<sbyte>();
+                            case 2: return dataset.Read<short>();
+                            case 4: return dataset.Read<int>();
+                            case 8: return dataset.Read<long>();
+                        }
                     }
                 }
-
-                return array2D;
+                else if (dataset.Type.Class == H5DataTypeClass.FloatingPoint)
+                {
+                    switch (dataset.Type.Size)
+                    {
+                        case 4: return dataset.Read<float>();
+                        case 8: return dataset.Read<double>();
+                    }
+                }
+                else if (dataset.Type.Class == H5DataTypeClass.String)
+                {
+                    return dataset.Read<string>();
+                }
+                else if (dataset.Type.Class == H5DataTypeClass.BitField)
+                {
+                    return dataset.Read<bool>();
+                }
             }
             else
             {
-                // Higher dimensions - return as flattened array
-                return dataset.Read<int[]>();
-            }
-        }
-
-        /// <summary>
-        /// Read Unsigned Integer Data
-        /// </summary>
-        private object ReadUnsignedIntegerData(IH5Dataset dataset, int[] dimensions)
-        {
-            // PureHDF has type-safe read methods
-            if (dimensions.Length == 1)
-            {
-                return dataset.Read<uint[]>();
-            }
-            else if (dimensions.Length == 2)
-            {
-                var data = dataset.Read<uint[]>();
-                uint[,] array2D = new uint[dimensions[0], dimensions[1]];
-
-                for (int i = 0; i < dimensions[0]; i++)
+                // 배열 또는 다차원 데이터
+                try
                 {
-                    for (int j = 0; j < dimensions[1]; j++)
+                    // 작은 데이터셋은 전체를 한 번에 읽기
+                    ulong totalSize = dataset.Space.Dimensions.Aggregate((ulong)1, (x, y) => x * y);
+                    if (totalSize < 1000000) // 백만 요소 미만
                     {
-                        array2D[i, j] = data[i * dimensions[1] + j];
+                        if (dataset.Type.Class == H5DataTypeClass.FixedPoint)
+                        {
+                            if (!dataset.Type.FixedPoint.IsSigned)
+                            {
+                                switch (dataset.Type.Size)
+                                {
+                                    case 1: return dataset.Read<byte[]>();
+                                    case 2: return dataset.Read<ushort[]>();
+                                    case 4: return dataset.Read<uint[]>();
+                                    case 8: return dataset.Read<ulong[]>();
+                                }
+                            }
+                            else
+                            {
+                                switch (dataset.Type.Size)
+                                {
+                                    case 1: return dataset.Read<sbyte[]>();
+                                    case 2: return dataset.Read<short[]>();
+                                    case 4: return dataset.Read<int[]>();
+                                    case 8: return dataset.Read<long[]>();
+                                }
+                            }
+                        }
+                        else if (dataset.Type.Class == H5DataTypeClass.FloatingPoint)
+                        {
+                            switch (dataset.Type.Size)
+                            {
+                                case 4: return dataset.Read<float[]>();
+                                case 8: return dataset.Read<double[]>();
+                            }
+                        }
+                        else if (dataset.Type.Class == H5DataTypeClass.String)
+                        {
+                            return dataset.Read<string[]>();
+                        }
+                        else if (dataset.Type.Class == H5DataTypeClass.BitField)
+                        {
+                            return dataset.Read<bool[]>();
+                        }
+                    }
+                    else
+                    {
+                        // 큰 데이터셋은 메타데이터만 반환하고 데이터는 별도 메서드로 가져오게 함
+                        return $"Large dataset: {totalSize} elements";
                     }
                 }
-
-                return array2D;
-            }
-            else
-            {
-                // Higher dimensions - return as flattened array
-                return dataset.Read<uint[]>();
-            }
-        }
-
-        /// <summary>
-        /// Read Double Data
-        /// </summary>
-        private object ReadFloatData(IH5Dataset dataset, int[] dimensions)
-        {
-            if (dimensions.Length == 1)
-            {
-                return dataset.Read<double[]>();
-            }
-            else if (dimensions.Length == 2)
-            {
-                var data = dataset.Read<double[]>();
-                double[,] array2D = new double[dimensions[0], dimensions[1]];
-
-                for (int i = 0; i < dimensions[0]; i++)
+                catch (Exception ex)
                 {
-                    for (int j = 0; j < dimensions[1]; j++)
-                    {
-                        array2D[i, j] = data[i * dimensions[1] + j];
-                    }
+                    return $"Error reading array data: {ex.Message}";
                 }
-
-                return array2D;
             }
-            else
-            {
-                return dataset.Read<double[]>();
-            }
+
+            return "Unsupported data type";
         }
-
-        /// <summary>
-        /// Read String Data
-        /// </summary>
-        private object ReadStringData(IH5Dataset dataset, int[] dimensions)
-        {
-            // PureHDF handles both fixed and variable-length strings automatically
-            return dataset.Read<string[]>();
-        }
-
-        /// <summary>
-        /// Add Attributes
-        /// </summary>
-        /// <param name="h5Object">PureHDF object with attributes</param>
-        /// <param name="node">Node for attribute</param>
-        private void ReadAttributes(IH5AttributableObject h5Object, Hdf5Node node)
-        {
-            foreach (var attrName in h5Object.AttributeNames)
-            {
-                var h5Attribute = h5Object.Attribute(attrName);
-
-                // Read the attribute value based on its type
-                object attrValue = ReadAttributeValue(h5Attribute);
-
-                var attribute = new Hdf5Attribute
-                {
-                    Name = attrName,
-                    Value = attrValue
-                };
-
-                node.Attributes.Add(attribute);
-            }
-        }
-
-        /// <summary>
-        /// Read Attribute Value
-        /// </summary>
-        /// <param name="h5Attribute">PureHDF Attribute object</param>
-        /// <returns>Attribute Value</returns>
-        private object ReadAttributeValue(IH5Attribute h5Attribute)
-        {
-            // PureHDF handles type conversion automatically through generics
-            var typeClass = h5Attribute.Type.Class;
-
-            switch (typeClass)
-            {
-                case H5DataTypeClass.String:
-                    // For string attributes, read as string
-                    return h5Attribute.Read<string>();
-
-                case H5DataTypeClass.Integer:
-                    // For integer attributes, read as int
-                    if (h5Attribute.Type.IsUnsigned)
-                        return h5Attribute.Read<uint>();
-                    return h5Attribute.Read<int>();
-
-                case H5DataTypeClass.Float:
-                    // For float attributes, read as double
-                    return h5Attribute.Read<double>();
-
-                case H5DataTypeClass.Array:
-                case H5DataTypeClass.VlenArray:
-                    // For array attributes, try to read as generic object
-                    // Needs refinement based on the base type
-                    return "[Array data]";
-
-                default:
-                    return $"[지원되지 않는 속성 타입: {typeClass}]";
-            }
-        }
-
-        /// <summary>
-        /// Convert H5DataTypeClass to string description
-        /// </summary>
-        /// <param name="dataType">PureHDF Type object</param>
-        /// <returns>Type String</returns>
-        private string GetDataType(H5DataType dataType)
-        {
-            var typeClass = dataType.Class;
-
-            switch (typeClass)
-            {
-                case H5DataTypeClass.Integer:
-                    return "Integer";
-                case H5DataTypeClass.Float:
-                    return "Float";
-                case H5DataTypeClass.String:
-                    return "String";
-                case H5DataTypeClass.Compound:
-                    return "Compound";
-                case H5DataTypeClass.Array:
-                    return "Array";
-                case H5DataTypeClass.VlenArray:
-                    return "VariableLength";
-                default:
-                    return $"Other ({typeClass})";
-            }
-        }
-*/
-
     }
 }

@@ -8,6 +8,8 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Collections.Concurrent
 @using Microsoft.JSInterop
+@using XXXBlazor.Client.Components.Grid
+@using XXXBlazor.Client.Components.Tree
 
 @inject IHdf5FileReader iHdf5Reader
 @inject IJSRuntime JSRuntime
@@ -54,7 +56,10 @@ else
                                     <DxStackLayoutItem>
                                         <Template>
                                             <div>
-                                                Tree View
+                                                <Tree_hdf
+                                                    selectedNode="@fileModel"
+                                                    OnNodeClicked="HandleNodeClicked">
+                                                </Tree_hdf>
                                             </div>
                                         </Template>
                                     </DxStackLayoutItem>
@@ -67,6 +72,7 @@ else
             <DxStackLayoutItem>
                 <Template>
                     <div>
+                        <Grid_hdf selectedNode="@selectedNode"></Grid_hdf>
                         Grid <br>
                         + Splitter<br>
                         + Chart
@@ -117,8 +123,8 @@ else if (processedChunks > 0)
     int SelectedFilesCount { get; set; }
 
     // File Data
-    private Hdf5FileModel? fileModel;
-    private Hdf5Node? selectedNode;
+    private Hdf5TreeNode? fileModel;
+    private Hdf5TreeNode? selectedNode;
 
     // JavaScript 초기화를 OnAfterRenderAsync로 이동
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -198,6 +204,11 @@ else if (processedChunks > 0)
                 return;
             } *@
 
+            fileModel = null;
+            selectedNode = null;
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             errorMessage = null;
             isLoading = true;
             processedChunks = 0;
@@ -256,9 +267,11 @@ else if (processedChunks > 0)
                 stopwatch.Stop();
                 Console.WriteLine($"[Elapsed Time: {stopwatch.ElapsedMilliseconds}ms]");
 
-                fileModel = iHdf5Reader.ReadHdf5FromStream(memoryStream, file.Name);
-                selectedNode = fileModel.RootGroup;
+                fileModel = iHdf5Reader.LoadFromStream(memoryStream);
+                selectedNode = fileModel;
             }
+
+            Console.WriteLine($"{fileModel.ToTreeString()}");
 
             @* JSInterop 의 WebWorker로 백그라운드 Read
             // 청크 처리 설정
@@ -336,6 +349,12 @@ else if (processedChunks > 0)
         }
     }
 
+    private void HandleNodeClicked(Hdf5TreeNode node)
+    {
+        selectedNode = node;
+        StateHasChanged();
+    }
+
     [JSInvokable]
     public void OnChunkProcessed(int chunkIndex, byte[] _processedData)
     {
@@ -379,6 +398,11 @@ else if (processedChunks > 0)
                 // 워커 정리 시도
                 JSRuntime.InvokeVoidAsync("disposeWorkers");
             }
+
+            fileModel = null;
+            selectedNode = null;
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
         catch
         {
