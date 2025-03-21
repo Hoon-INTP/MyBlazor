@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
 using PureHDF;
 using PureHDF.Selections;
 using XXXBlazor.Client.Models;
@@ -44,11 +39,11 @@ namespace XXXBlazor.Client.Services
         /// </summary>
         /// <param name="stream">HDF5 데이터가 포함된 메모리 스트림</param>
         /// <returns>HDF5 파일의 루트 노드</returns>
-        public Hdf5TreeNode LoadFromStream(MemoryStream stream)
+        public Hdf5TreeNode LoadFromStream(MemoryStream stream, string fileName)
         {
             var rootNode = new Hdf5TreeNode
             {
-                Name = "/",
+                Name = fileName,
                 Path = "/",
                 NodeType = Hdf5NodeType.Group,
                 Children = new List<Hdf5TreeNode>()

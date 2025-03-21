@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using XXXBlazor.Client.Models;
 
 namespace XXXBlazor.Client.Services
@@ -22,7 +19,7 @@ namespace XXXBlazor.Client.Services
         /// </summary>
         /// <param name="stream">HDF5 데이터가 포함된 메모리 스트림</param>
         /// <returns>HDF5 파일의 루트 노드</returns>
-        Hdf5TreeNode LoadFromStream(MemoryStream stream);
+        Hdf5TreeNode LoadFromStream(MemoryStream stream, string fileName);
 
         /// <summary>
         /// 데이터셋에서 특정 부분만 읽습니다.
