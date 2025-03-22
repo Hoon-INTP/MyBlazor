@@ -1,17 +1,33 @@
 
 @using XXXBlazor.Client.Models
+@using DevExpress.Blazor
 
 <h6>[GRID]</h6>
-<h6>[GRID]</h6>
+<h6>"@selectedNode.Name"</h6>
 <h6>[GRID]</h6>
 
+
+<DxGrid data="@NodeData">
+    <Columns>
+        <DxGridDataColumn FieldName="Name" />
+    </Columns>
+</DxGrid>
 
 
 @code
 {
     [Parameter]
     public Hdf5TreeNode? selectedNode { get; set; } = null;
-    private Hdf5TreeNode? oldSelectedNode { get; set; } = null;
 
+    private bool IsDataLoading = false;
 
+    private object NodeData;
+
+    protected override void OnParametersSet()
+    {
+        if (selectedNode != null)
+        {
+            NodeData = selectedNode.Data;
+        }
+    }
 }
