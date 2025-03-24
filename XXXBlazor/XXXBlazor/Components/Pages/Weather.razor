@@ -14,6 +14,8 @@
 }
 else
 {
+    <DxButton RenderStyle="ButtonRenderStyle.Info" Text="Refresh" Click="@RefreshData" />
+
     <DxGrid Data="@forecasts"
                 CssClass="mw-1100">
         <Columns>
@@ -30,6 +32,15 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        forecasts = await ForecastService.GetForecastAsync(DateOnly.FromDateTime(DateTime.Now));
+    }
+
+    private async Task RefreshData()
+    {
+        forecasts = null;
+
+        StateHasChanged();
+
         forecasts = await ForecastService.GetForecastAsync(DateOnly.FromDateTime(DateTime.Now));
     }
 }

@@ -3,15 +3,94 @@
 @using DevExpress.Blazor
 
 <h6>[GRID]</h6>
-<h6>"@selectedNode.Name"</h6>
+
+<div>
+    <h6>[TEST]</h6>
+        <DxGrid data="@TestData">
+            <Columns>
+                <DxGridDataColumn FieldName="Data" DisplayFormat="@(TestData.GetType() == typeof(double) ? "n3" : "n0")" />
+            </Columns>
+        </DxGrid>
+    <h6>[TEST]</h6>
+</div>
+
+
+<h6>"@(selectedNode!=null ? selectedNode.Name : "GRID" )"</h6>
 <h6>[GRID]</h6>
 
+@* @if(IsDataLoading)
+{
 
-<DxGrid data="@NodeData">
+}
+else
+{
+
+}
+
+<DxGrid data="@NodeDbData">
     <Columns>
-        <DxGridDataColumn FieldName="Name" />
+        <DxGridDataColumn Caption="@(selectedNode != null ? selectedNode.Name : "")" DisplayFormat="@(NodeData.GetType() == typeof(double) ? "n3" : "n0")" />
     </Columns>
-</DxGrid>
+</DxGrid> *@
+
+@if (!IsDataLoading && null != selectedNode)
+{
+    <div>
+        <DxButton RenderStyle="ButtonRenderStyle.Info" Text="Console Data" Click="@ConsoleData" />
+        <h4>[1d2d3d]</h4>
+            [Name]<br>
+            "@selectedNode.Name"<br>
+            <br>
+
+            [Path]<br>
+            "@selectedNode.Path"<br>
+            <br>
+
+            [NodeType]<br>
+            "@selectedNode.NodeType"<br>
+            <br>
+
+            [Children]<br>
+            "@selectedNode.Children"<br>
+            @foreach (var child in selectedNode.Children)
+            {
+                <p>@child.Name</p>
+            }
+            <br>
+
+            [Attributes]<br>
+            "@selectedNode.Attributes"<br>
+            @foreach (var attr in selectedNode.Attributes)
+            {
+                <p>@attr.Key: @attr.Value</p>
+            }
+            <br>
+
+            [Dimensions]<br>
+            "@selectedNode.Dimensions"<br>
+            @if (selectedNode.Dimensions != null)
+            {
+                @foreach (var dim in selectedNode.Dimensions)
+                {
+                    @($"{dim} ")
+                }
+            }
+            <br>
+            <br>
+
+            [DataType]<br>
+            "@selectedNode.DataType"<br>
+            <br>
+
+            [Data]<br>
+            "@selectedNode.Data"<br>
+            "@FormatArray(selectedNode.Data)"<br>
+            <br>
+
+        <h4>[1d2d3d]</h4>
+    </div>
+}
+
 
 
 @code
@@ -23,11 +102,106 @@
 
     private object NodeData;
 
-    protected override void OnParametersSet()
+    private List<TESTTESTDATA> TestData { get; set; }
+
+    public class TESTTESTDATA
+    {
+        public string Name { get; set; }
+        public int Type { get; set; }
+        public object Data { get; set; }
+    }
+
+    static string FormatArray(object value) => value switch
+    {
+        int[] array => string.Join(", ", array),
+        double[] array => string.Join(", ", Array.ConvertAll(array, x => x.ToString("F2"))),
+        string[] array => string.Join(" | ", array),
+        _ => "Not an array"
+    };
+
+    protected override void OnInitialized()
+    {
+        // new double[] { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0 };
+
+        TestData = new List<TESTTESTDATA>
+        {
+            new TESTTESTDATA { Name = "1", Data = 1.0 },
+            new TESTTESTDATA { Name = "2", Data = 2.0 },
+            new TESTTESTDATA { Name = "3", Data = 42 },
+            //new TESTTESTDATA { Name = "2", Data = new int[] { 10, 20, 30, 40, 50, 60, 70, 80 } }
+        };
+    }
+
+    protected override async Task OnParametersSetAsync()
     {
         if (selectedNode != null)
         {
-            NodeData = selectedNode.Data;
+            Console.WriteLine("LoadNodeData 진입");
+            LoadNodeData();
+            Console.WriteLine("LoadNodeData 탈출");
+        }
+    }
+
+    private async Task LoadNodeData()
+    {
+        try
+        {
+            Console.WriteLine("LoadNodeData 시작");
+            await Task.Delay(2500);
+            IsDataLoading = true;
+            await Task.Delay(2500);
+            if (selectedNode != null)
+            {
+                if (selectedNode.NodeType == Hdf5NodeType.Group)
+                {
+
+                }
+                else if (selectedNode.NodeType == Hdf5NodeType.Dataset)
+                {
+                    await Task.Run(() => NodeData=selectedNode.Data);
+                }
+            }
+
+
+        }
+        catch
+        {
+
+        }
+        finally
+        {
+            IsDataLoading = false;
+            Console.WriteLine("LoadNodeData 종료");
+        }
+    }
+
+    private void ConsoleData()
+    {
+        if(selectedNode.Data is double[] doubleArray)
+        {
+            foreach (var val in doubleArray)
+            {
+                Console.WriteLine(val);
+            }
+        }
+        else if(selectedNode.Data is int[] intArray)
+        {
+            foreach (var val in intArray)
+            {
+                Console.WriteLine(val);
+            }
+        }
+        else if(selectedNode.Data is string[] stringArray)
+        {
+            foreach (var val in stringArray)
+            {
+                Console.WriteLine(val);
+            }
+        }
+        else
+        {
+            Console.WriteLine("다른 타입임");
+            Console.WriteLine(selectedNode.Data);
         }
     }
 }

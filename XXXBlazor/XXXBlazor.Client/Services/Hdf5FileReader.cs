@@ -402,11 +402,13 @@ namespace XXXBlazor.Client.Services
         /// </summary>
         private object ReadDatasetValue(IH5Dataset dataset)
         {
+            // 통일성을 위해 array 형태로 반환
+            /*
             // 타입과 크기에 따라 적절한 방법으로 데이터를 읽음
             bool isScalar = dataset.Space.Rank == 0 ||
                 (dataset.Space.Dimensions.Length == 1 && dataset.Space.Dimensions[0] == 1);
 
-            if (isScalar)
+             if (isScalar)
             {
                 // 스칼라 값
                 if (dataset.Type.Class == H5DataTypeClass.FixedPoint)
@@ -449,7 +451,7 @@ namespace XXXBlazor.Client.Services
                     return dataset.Read<bool>();
                 }
             }
-            else
+            else */
             {
                 // 배열 또는 다차원 데이터
                 try

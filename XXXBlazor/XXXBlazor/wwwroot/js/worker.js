@@ -23,7 +23,7 @@ window.initializeWorkers = function (dotNetRef) {
         workers.push(worker);
     }
 
-    console.log(`${maxWorkers}개의 웹 워커가 초기화되었습니다.`);
+    //console.log(`${maxWorkers}개의 웹 워커가 초기화되었습니다.`);
 };
 
 // 청크 처리 요청

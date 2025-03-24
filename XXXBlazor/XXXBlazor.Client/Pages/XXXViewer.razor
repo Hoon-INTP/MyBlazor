@@ -145,7 +145,7 @@ else if (processedChunks > 0)
         try
         {
             initializationAttempts++;
-            Console.WriteLine($"JavaScript 초기화 시도 {initializationAttempts}/{MAX_INITIALIZATION_ATTEMPTS}...");
+            //Console.WriteLine($"JavaScript 초기화 시도 {initializationAttempts}/{MAX_INITIALIZATION_ATTEMPTS}...");
 
             dotNetObjectRef = DotNetObjectReference.Create(this);
             await JSRuntime.InvokeVoidAsync("initializeWorkers", dotNetObjectRef);
@@ -159,12 +159,12 @@ else if (processedChunks > 0)
 
             isJsInitialized = true;
             errorMessage = null;
-            Console.WriteLine("JavaScript 초기화 성공!");
+            //Console.WriteLine("JavaScript 초기화 성공!");
         }
         catch (Exception ex)
         {
             errorMessage = $"JavaScript 초기화 오류 ({initializationAttempts}/{MAX_INITIALIZATION_ATTEMPTS}): {ex.Message}";
-            Console.WriteLine($"JavaScript 초기화 오류: {ex}");
+            //Console.WriteLine($"JavaScript 초기화 오류: {ex}");
 
             if (initializationAttempts < MAX_INITIALIZATION_ATTEMPTS)
             {
@@ -189,14 +189,20 @@ else if (processedChunks > 0)
     {
         SelectedFilesCount = files.ToList().Count();
         InvokeAsync(StateHasChanged);
-        if(SelectedFilesCount == 0) errorMessage = null;
 
-        Console.WriteLine($"SelectedFilesChanged {SelectedFilesCount}");
+        if(SelectedFilesCount == 0)
+        {
+            errorMessage = null;
+            fileModel = null;
+            selectedNode = null;
+        }
+
+        //Console.WriteLine($"SelectedFilesChanged {SelectedFilesCount}");
     }
 
     protected async Task OnFilesUploading(FilesUploadingEventArgs args)
     {
-        Console.WriteLine("File Upload Start");
+        //Console.WriteLine("File Upload Start");
         try
         {
             @* // JS가 초기화되지 않았다면 작업 중단
@@ -242,7 +248,7 @@ else if (processedChunks > 0)
                 {
                     if(file.Size > 5 * 1024 * 1024) //1MB
                     {
-                        Console.WriteLine("over 5MB");
+                        //Console.WriteLine("over 5MB");
                         int chunkSize1 = 16 * 1024; //16KB
                         byte[] buffer = new byte[chunkSize1];
                         int bytesRead;
@@ -261,7 +267,7 @@ else if (processedChunks > 0)
                     }
                     else
                     {
-                        Console.WriteLine("under 5MB");
+                        //Console.WriteLine("under 5MB");
                         await fileStream.CopyToAsync(memoryStream);
                     }
                 }
@@ -269,13 +275,13 @@ else if (processedChunks > 0)
                 memoryStream.Position = 0;
 
                 stopwatch.Stop();
-                Console.WriteLine($"[Elapsed Time: {stopwatch.ElapsedMilliseconds}ms]");
+                //Console.WriteLine($"[Elapsed Time: {stopwatch.ElapsedMilliseconds}ms]");
 
                 fileModel = iHdf5Reader.LoadFromStream(memoryStream, fileName);
                 selectedNode = fileModel;
             }
 
-            Console.WriteLine($"{fileModel.ToTreeString()}");
+            //Console.WriteLine($"{fileModel.ToTreeString()}");
 
             @* JSInterop 의 WebWorker로 백그라운드 Read
             // 청크 처리 설정
@@ -344,7 +350,7 @@ else if (processedChunks > 0)
         catch (Exception exception)
         {
             errorMessage = $"Error occurs during file loading: {exception.Message}";
-            Console.WriteLine($"Error during file processing: {exception}");
+            //Console.WriteLine($"Error during file processing: {exception}");
         }
         finally
         {
@@ -374,7 +380,7 @@ else if (processedChunks > 0)
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"OnChunkProcessed 오류: {ex}");
+            //Console.WriteLine($"OnChunkProcessed 오류: {ex}");
         }
     }
 
