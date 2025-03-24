@@ -41,7 +41,7 @@
 
         // Blazor 앱에서 호출하는 초기화 메서드
         window.initializeWorkers = function (dotNetRef) {
-            console.log("initializeWorkers 호출됨", dotNetRef);
+            //console.log("initializeWorkers 호출됨", dotNetRef);
             dotNetReference = dotNetRef;
 
             // 기존 워커 제거
@@ -64,7 +64,7 @@
                 }
             }
 
-            console.log(`${workers.length}개의 웹 워커가 초기화되었습니다.`);
+            //console.log(`${workers.length}개의 웹 워커가 초기화되었습니다.`);
         };
 
         // 청크 처리 요청
@@ -90,7 +90,7 @@
             URL.revokeObjectURL(workerUrl);
         };
 
-        console.log("파일 처리 스크립트가 로드되었습니다.");
+        //console.log("파일 처리 스크립트가 로드되었습니다.");
     </script>
 </body>
 

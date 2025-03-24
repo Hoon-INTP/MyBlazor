@@ -124,4 +124,15 @@ namespace XXXBlazor.Client.Models
             throw new InvalidOperationException($"데이터를 {typeof(T).Name} 타입으로 변환할 수 없습니다.");
         }
     }
+
+    public class DatasetData
+    {
+        public string Name { get; set; }
+        //public string Path { get; set; }
+        //public ulong[] Dimensions { get; set; }
+        //public Type DataType { get; set; }
+        public int Index { get; set; }
+        public string Time { get; set; }
+        public object Data { get; set; }
+    }
 }

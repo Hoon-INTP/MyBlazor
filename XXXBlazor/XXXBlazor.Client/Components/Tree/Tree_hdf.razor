@@ -2,7 +2,6 @@
 @using DevExpress.Blazor
 
 <div>
-    <h4>HDF5 파일 구조</h4>
 
     <DxCheckBox CheckType="CheckType.Switch"
                 Checked="@ShowAttribute"
@@ -129,7 +128,11 @@
             //Console.WriteLine($"Root 노드: {selectedNode.Name}, {selectedNode.Path}");
             //Console.WriteLine($"자식 노드 수: {selectedNode.Children?.Count ?? 0}");
 
-            nodesList.Clear();
+            if(nodesList.Count > 0)
+            {
+                nodesList.Clear();
+            }
+
             nodesList.Add(PrepareNodeForTreeView(selectedNode));
 
             if (currentNode == null)
@@ -138,7 +141,11 @@
             }
 
             // 노드 맵 초기화
-            nodePathMap.Clear();
+            if(nodePathMap.Count > 0)
+            {
+                nodePathMap.Clear();
+            }
+
             BuildNodePathMap(selectedNode);
 
             //Console.WriteLine($"노드 맵 크기: {nodePathMap.Count}");

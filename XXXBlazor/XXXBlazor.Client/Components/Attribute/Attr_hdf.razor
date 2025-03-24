@@ -1,0 +1,75 @@
+@* @using XXXBlazor.Client.Models
+@using DevExpress.Blazor
+
+@inherits Hdf5AttrBase
+
+@if(ShowAttribute)
+{
+    @if (currentNode != null)
+    {
+        <div>
+            <h5>노드 정보</h5>
+            <div>
+                <p><strong>이름:</strong> @currentNode.Name</p>
+                <p><strong>경로:</strong> @currentNode.Path</p>
+                <p><strong>타입:</strong> @currentNode.NodeType</p>
+
+                @if (currentNode.NodeType == Hdf5NodeType.Dataset && currentNode.Dimensions != null)
+                {
+                    <p><strong>차원:</strong> [@string.Join(", ", currentNode.Dimensions)]</p>
+                    <p><strong>데이터 타입:</strong> @(currentNode.DataType?.Name ?? "Unknown")</p>
+
+                    <div>
+                        <h6>데이터 미리보기</h6>
+                        @if (currentNode.Data != null)
+                        {
+                            @if (currentNode.Data is string dataStr)
+                            {
+                                <p>@dataStr</p>
+                            }
+                            else if (currentNode.Data.GetType().IsArray)
+                            {
+                                <p>@GetArrayPreview(currentNode.Data)</p>
+                            }
+                            else
+                            {
+                                <p>@currentNode.Data.ToString()</p>
+                            }
+                        }
+                        else
+                        {
+                            <p>데이터 없음</p>
+                        }
+                    </div>
+                }
+
+                @if (currentNode.Attributes != null && currentNode.Attributes.Any())
+                {
+                    <div>
+                        <h6>속성 (@currentNode.Attributes.Count)</h6>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>이름</th>
+                                    <th>값</th>
+                                    <th>타입</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var attr in currentNode.Attributes)
+                                {
+                                    <tr>
+                                        <td><strong>@attr.Key</strong></td>
+                                        <td>@FormatAttributeValue(attr.Value)</td>
+                                        <td>@(attr.Value?.GetType().Name ?? "Unknown")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+ *@

@@ -9,6 +9,7 @@
 @using System.Collections.Concurrent
 @using Microsoft.JSInterop
 @using XXXBlazor.Client.Components.Grid
+@using XXXBlazor.Client.Components.Chart
 @using XXXBlazor.Client.Components.Tree
 
 @inject IHdf5FileReader iHdf5Reader
@@ -16,7 +17,7 @@
 
 <PageTitle>XXXViewer</PageTitle>
 
-@if (!isJsInitialized)
+@* @if (!isJsInitialized)
 {
     <div class="alert alert-info">
         <h6>JavaScript 초기화 중입니다...</h6>
@@ -28,7 +29,7 @@
     </div>
 }
 else
-{
+{*@
     <DxStackLayout Orientation="Orientation.Horizontal">
         <Items>
             <DxStackLayoutItem Length="20%">
@@ -40,7 +41,7 @@ else
                                         <Template>
                                             <div>
                                                 <DxFileInput
-                                                    Visible="@isJsInitialized"
+                                                    Visible="true"
                                                     ShowFileList="false"
                                                     MaxFileCount="10"
                                                     MaxFileSize="@MaxFileSize"
@@ -53,8 +54,15 @@ else
                                         </Template>
                                     </DxStackLayoutItem>
 
+                                    <DxStackLayoutItem Length="30px">
+                                        @* Attribute *@
+                                    </DxStackLayoutItem>
+
                                     <DxStackLayoutItem Length="100%">
                                         <Template>
+                                            <div>
+                                                <h4>Tree View</h4>
+                                            </div>
                                             <div>
                                                 <Tree_hdf
                                                     selectedNode="@fileModel"
@@ -75,18 +83,20 @@ else
                 <Template>
                     <div>
                         <Grid_hdf selectedNode="@selectedNode"></Grid_hdf>
-                        Grid <br>
-                        + Splitter<br>
-                        + Chart
+                    </div>
+
+                    <div>
+                        <DxSplitter></DxSplitter>
+                    </div>
+
+                    <div>
+                        <Chart_hdf></Chart_hdf>
                     </div>
                 </Template>
             </DxStackLayoutItem>
         </Items>
     </DxStackLayout>
-
-
-
-}
+@* } *@
 
 @if (isLoading)
 {
@@ -105,6 +115,8 @@ else if (processedChunks > 0)
 {
 
 }
+
+
 
 @code {
     private const int MaxFileSize = 15 * 1024 * 1024;
@@ -133,7 +145,7 @@ else if (processedChunks > 0)
     {
         if (firstRender)
         {
-            await InitializeJavaScript();
+            //await InitializeJavaScript();
         }
     }
 
@@ -185,10 +197,9 @@ else if (processedChunks > 0)
         await InitializeJavaScript();
     }
 
-    protected void SelectedFilesChanged(IEnumerable<UploadFileInfo> files)
+    protected async void SelectedFilesChanged(IEnumerable<UploadFileInfo> files)
     {
         SelectedFilesCount = files.ToList().Count();
-        InvokeAsync(StateHasChanged);
 
         if(SelectedFilesCount == 0)
         {
@@ -196,6 +207,8 @@ else if (processedChunks > 0)
             fileModel = null;
             selectedNode = null;
         }
+
+        await InvokeAsync(StateHasChanged);
 
         //Console.WriteLine($"SelectedFilesChanged {SelectedFilesCount}");
     }
@@ -249,7 +262,7 @@ else if (processedChunks > 0)
                     if(file.Size > 5 * 1024 * 1024) //1MB
                     {
                         //Console.WriteLine("over 5MB");
-                        int chunkSize1 = 16 * 1024; //16KB
+                        int chunkSize1 = 64 * 1024; //16KB
                         byte[] buffer = new byte[chunkSize1];
                         int bytesRead;
                         long totalBytesRead = 0;
@@ -277,7 +290,8 @@ else if (processedChunks > 0)
                 stopwatch.Stop();
                 //Console.WriteLine($"[Elapsed Time: {stopwatch.ElapsedMilliseconds}ms]");
 
-                fileModel = iHdf5Reader.LoadFromStream(memoryStream, fileName);
+                await Task.Run(() => fileModel = iHdf5Reader.LoadFromStream(memoryStream, fileName));
+
                 selectedNode = fileModel;
             }
 
@@ -380,7 +394,7 @@ else if (processedChunks > 0)
         }
         catch (Exception ex)
         {
-            //Console.WriteLine($"OnChunkProcessed 오류: {ex}");
+            Console.WriteLine($"OnChunkProcessed 오류: {ex}");
         }
     }
 
@@ -422,19 +436,5 @@ else if (processedChunks > 0)
         {
             dotNetObjectRef?.Dispose();
         }
-    }
-
-    string ByteArrayToString(byte[] buffer)
-    {
-        return string.Join(" ", buffer.Select((b, i) =>
-                                                (b >= 0x20 && b <= 0x7E) ?
-                                                    (b >= 'A' && b <= 'Z') ? $"{(char)(b + 32)}" :   // 대문자 → 소문자
-                                                    (b >= 'a' && b <= 'z') ? $"{(char)(b - 32)}" :   // 소문자 → 대문자
-                                                    (b >= '0' && b <= '9') ? $"{(char)(b)}" :          // 숫자 → 그대로 출력
-                                                    $"{(char)b}" :
-                                                    $"0x{b:X2}"                                              // 나머지 → 16진수 변환
-                                                )
-                                                .Select((s, i) => (i % 16 == 15) ? s + "\n" : s)  // 16개마다 줄바꿈
-                                        );
     }
 }
