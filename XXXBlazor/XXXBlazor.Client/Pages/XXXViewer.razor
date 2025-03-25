@@ -32,7 +32,7 @@ else
 {*@
     <DxStackLayout Orientation="Orientation.Horizontal">
         <Items>
-            <DxStackLayoutItem Length="20%">
+            <DxStackLayoutItem Length="15%">
                 <Template>
                     <div>
                         <DxStackLayout Orientation="Orientation.Vertical">
@@ -58,7 +58,7 @@ else
                                         @* Attribute *@
                                     </DxStackLayoutItem>
 
-                                    <DxStackLayoutItem Length="100%">
+                                    <DxStackLayoutItem Length="100%-100px">
                                         <Template>
                                             <div>
                                                 <h4>Tree View</h4>
@@ -79,18 +79,25 @@ else
 
             <DxStackLayoutItem Length="20px"></DxStackLayoutItem> @* For Padding *@
 
-            <DxStackLayoutItem Length="80%">
+            <DxStackLayoutItem Length="85%">
                 <Template>
                     <div>
-                        <Grid_hdf selectedNode="@selectedNode"></Grid_hdf>
-                    </div>
-
-                    <div>
-                        <DxSplitter></DxSplitter>
-                    </div>
-
-                    <div>
-                        <Chart_hdf></Chart_hdf>
+                        <DxSplitter Height="800px" Width="100%">
+                            <Panes>
+                                <DxSplitterPane>
+                                    <DxSplitter Orientation="Orientation.Vertical">
+                                        <Panes>
+                                            <DxSplitterPane MaxSize="90%" AllowCollapse="true">
+                                                    <Grid_hdf selectedNode="@selectedNode"></Grid_hdf>
+                                            </DxSplitterPane>
+                                            <DxSplitterPane MaxSize="90%" AllowCollapse="true">
+                                                    <Chart_hdf></Chart_hdf>
+                                            </DxSplitterPane>
+                                        </Panes>
+                                    </DxSplitter>
+                                </DxSplitterPane>
+                            </Panes>
+                        </DxSplitter>
                     </div>
                 </Template>
             </DxStackLayoutItem>

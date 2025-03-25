@@ -1,4 +1,3 @@
-
-.xxxgrid-hdf {
-    height: 100%;
+.grid-size {
+    max-height: 200px;
 }

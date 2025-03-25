@@ -17,9 +17,11 @@ namespace XXXBlazor.Client.Pages
             for(int i = 0; i < 60; i++)
             {
                 temp.Add(new DatasetData() { Name = "Test1", Index = i, Data = i*1.1 + 0.3 });
-                await Task.Delay(100);
+                //await Task.Delay(100);
                 Console.WriteLine($"Data Added [{i}]");
             }
+
+            await Task.Delay(100);
 
             TestData = temp.AsQueryable();
 

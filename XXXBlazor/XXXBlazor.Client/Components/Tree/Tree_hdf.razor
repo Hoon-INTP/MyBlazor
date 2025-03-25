@@ -18,10 +18,7 @@
     }
     else
     {
-        <DxTreeView
-            Data="@nodesList"
-            AllowSelectNodes="true"
-            SelectionChanged="OnNodeSelected">
+        <DxTreeView Data="@nodesList" AllowSelectNodes="true" SelectionChanged="OnNodeSelected" ShowFilterPanel="true" FilterMinLength="2" FilterMode="NavigationFilterMode.EntireBranch">
             <DataMappings>
                 <DxTreeViewDataMapping
                     Text="Name"
