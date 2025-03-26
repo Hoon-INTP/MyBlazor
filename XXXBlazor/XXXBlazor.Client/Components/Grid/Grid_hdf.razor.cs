@@ -1,16 +1,18 @@
 using Microsoft.AspNetCore.Components;
 using XXXBlazor.Client.Models;
 using DevExpress.Blazor;
+using System.Data;
+using DevExpress.ClipboardSource.SpreadsheetML;
+using DevExpress.XtraEditors.Filtering;
 
 namespace XXXBlazor.Client.Pages
 {
     public class Hdf5GridBase : ComponentBase
     {
         [Parameter]
-        public Hdf5TreeNode? selectedNode { get; set; } = null;
-
-        [Parameter]
         public List<List<DatasetData>>? NodeData { get; set; } = null;
+
+        protected DataTable convertedData;
 
         protected bool IsDataLoading = false;
 
@@ -20,25 +22,33 @@ namespace XXXBlazor.Client.Pages
         {
             if(NodeData != null)
             {
-                await Task.Run(() => NodeData.Clear());
+                await Task.Run(() => convertedData = ConvertToDataTable(NodeData));
+            }
+        }
+
+        private DataTable ConvertToDataTable(List<List<DatasetData>> nodeData)
+        {
+            var dt = new DataTable();
+
+            for(int j = 0; j < nodeData.Count; j++)
+            {
+                dt.Columns.Add($"Data_{j}", typeof(DatasetData));
             }
 
-            if (selectedNode != null)
+            int i = 0;
+            while(i < nodeData.Count)
             {
-                if(selectedNode.NodeType == Hdf5NodeType.Dataset)
+                DataRow row = dt.NewRow();
+                for(int j = 0; j < nodeData.Count; j++)
                 {
-                    //await LoadNodeData(selectedNode);
-                    Console.WriteLine("Dataset");
+                    row[$"Data_{j}"] = nodeData[j][i];
                 }
-                else if(selectedNode.NodeType == Hdf5NodeType.Group)
-                {
-                    Console.WriteLine("Group");
-                }
-            }
-            else
-            {
 
+                dt.Rows.Add(row);
+                i++;
             }
+
+            return dt;
         }
 
         protected RenderFragment BuildColumnsGrid()
@@ -68,37 +78,14 @@ namespace XXXBlazor.Client.Pages
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         protected void ConsoleData()
         {
-            if(selectedNode == null)
+            if(NodeData == null)
             {
-                Console.WriteLine("selectedNode is null");
+                Console.WriteLine("NodeData is null");
                 return;
             }
 
-            if(selectedNode.Data is double[] doubleArray)
-            {
-                foreach (var val in doubleArray)
-                {
-                    Console.WriteLine(val);
-                }
-            }
-            else if(selectedNode.Data is int[] intArray)
-            {
-                foreach (var val in intArray)
-                {
-                    Console.WriteLine(val);
-                }
-            }
-            else if(selectedNode.Data is string[] stringArray)
-            {
-                foreach (var val in stringArray)
-                {
-                    Console.WriteLine(val);
-                }
-            }
-            else
-            {
-                Console.WriteLine("Not supported data type");
-            }
+            Console.WriteLine($"NodeData [{NodeData[0][0].Name} : {NodeData[0][0].Data}] Count: {NodeData.Count}");
+
         }
 
         protected bool bDebugMode = false;

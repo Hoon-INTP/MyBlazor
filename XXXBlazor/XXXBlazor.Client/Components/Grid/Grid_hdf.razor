@@ -1,6 +1,7 @@
 
 @using XXXBlazor.Client.Models
 @using DevExpress.Blazor
+@using System.Data
 
 @inherits Hdf5GridBase
 
@@ -10,9 +11,11 @@
 }
 else
 {
-    <DxGrid data="@NodeData" CssClass="grid-size" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false">
+    <DxGrid data="@convertedData" CssClass="grid-size" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false">
         <Columns>
-            @BuildColumnsGrid()
+             @foreach (DataColumn col in convertedData.Columns) {
+                <DxGridDataColumn FieldName='@($"{col.ColumnName}.Data")'></DxGridDataColumn>
+            }
         </Columns>
     </DxGrid>
 
@@ -21,6 +24,7 @@ else
     </div>
 }
 
+@*
 @if (!IsDataLoading && null != selectedNode && bDebugMode)
 {
     <div>
@@ -86,4 +90,7 @@ else
 
         <h4>[1d2d3d]</h4>
     </div>
+
 }
+
+*@
