@@ -168,7 +168,8 @@ namespace XXXBlazor.Client.Services
                         Name = childName,
                         Path = childPath,
                         NodeType = Hdf5NodeType.Group,
-                        Children = new List<Hdf5TreeNode>()
+                        Children = new List<Hdf5TreeNode>(),
+                        Parent = parentNode
                     };
 
                     parentNode.Children.Add(groupNode);
@@ -192,7 +193,8 @@ namespace XXXBlazor.Client.Services
                 Name = datasetName,
                 Path = datasetPath,
                 NodeType = Hdf5NodeType.Dataset,
-                Dimensions = dataset.Space.Dimensions
+                Dimensions = dataset.Space.Dimensions,
+                Parent = parentNode
             };
 
             // 데이터 타입 설정

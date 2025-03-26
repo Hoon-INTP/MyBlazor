@@ -12,7 +12,7 @@ else
 {
     <DxGrid data="@NodeData" CssClass="grid-size" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false">
         <Columns>
-            <DxGridDataColumn FieldName="Data"/>
+            @BuildColumnsGrid()
         </Columns>
     </DxGrid>
 
@@ -26,6 +26,10 @@ else
     <div>
         <DxButton RenderStyle="ButtonRenderStyle.Info" Text="Console Data" Click="@ConsoleData" />
         <h4>[1d2d3d]</h4>
+            [THIS]<br>
+            "@selectedNode"<br>
+            <br>
+
             [Name]<br>
             "@selectedNode.Name"<br>
             <br>
@@ -36,6 +40,11 @@ else
 
             [NodeType]<br>
             "@selectedNode.NodeType"<br>
+            <br>
+
+            [Parent]<br>
+            "@selectedNode.Parent"<br>
+            "@selectedNode.Parent.Name"<br>
             <br>
 
             [Children]<br>

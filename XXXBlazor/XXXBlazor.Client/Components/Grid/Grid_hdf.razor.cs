@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using XXXBlazor.Client.Models;
+using DevExpress.Blazor;
 
 namespace XXXBlazor.Client.Pages
 {
@@ -8,9 +9,12 @@ namespace XXXBlazor.Client.Pages
         [Parameter]
         public Hdf5TreeNode? selectedNode { get; set; } = null;
 
+        [Parameter]
+        public List<List<DatasetData>>? NodeData { get; set; } = null;
+
         protected bool IsDataLoading = false;
 
-        protected List<DatasetData>? NodeData { get; set; }
+        //protected List<DatasetData>? NodeData { get; set; }
 
         protected override async Task OnParametersSetAsync()
         {
@@ -23,7 +27,8 @@ namespace XXXBlazor.Client.Pages
             {
                 if(selectedNode.NodeType == Hdf5NodeType.Dataset)
                 {
-                    await LoadNodeData(selectedNode);
+                    //await LoadNodeData(selectedNode);
+                    Console.WriteLine("Dataset");
                 }
                 else if(selectedNode.NodeType == Hdf5NodeType.Group)
                 {
@@ -36,64 +41,26 @@ namespace XXXBlazor.Client.Pages
             }
         }
 
-        private async Task LoadNodeData(Hdf5TreeNode SelNode)
+        protected RenderFragment BuildColumnsGrid()
         {
-            try
+            List<List<DatasetData>> temp = NodeData;
+
+            RenderFragment columns = b =>
             {
-                Console.WriteLine("LoadNodeData 시작");
-                IsDataLoading = true;
-                if (SelNode != null)
+                foreach (var data in temp)
                 {
-                    if (SelNode.NodeType == Hdf5NodeType.Group)
+                    if (data != null)
                     {
-                        // 데이터셋을 리스트에 저장 후 각 데이터셋을 전부 Load
-                    }
-                    else if (SelNode.NodeType == Hdf5NodeType.Dataset)
-                    {
-                        await Task.Run(() =>
+                        foreach (var item in data)
                         {
-                            var dataList = new List<DatasetData>();
-
-                            if(SelNode.Data is double[] doubleArray)
-                            {
-                                foreach (var val in doubleArray)
-                                {
-                                    dataList.Add(new DatasetData { Name = SelNode.Name, Data = val });
-                                }
-                            }
-                            else if(SelNode.Data is int[] intArray)
-                            {
-                                foreach (var val in intArray)
-                                {
-                                    dataList.Add(new DatasetData { Name = SelNode.Name, Data = val });
-                                }
-                            }
-                            else if(SelNode.Data is string[] stringArray)
-                            {
-                                foreach (var val in stringArray)
-                                {
-                                    dataList.Add(new DatasetData { Name = SelNode.Name, Data = val });
-                                }
-                            }
-                            else
-                            {
-                                throw new Exception("Not supported data type");
-                            }
-
-                            NodeData = dataList;
-                        });
+                            b.OpenComponent(0, typeof(DxGridDataColumn));
+                            b.AddAttribute(0, "FieldName", item.Data);
+                            b.CloseComponent();
+                        }
                     }
                 }
-            }
-            catch
-            {
-
-            }
-            finally
-            {
-                IsDataLoading = false;
-                Console.WriteLine("LoadNodeData 종료");
-            }
+            };
+            return columns;
         }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -33,6 +33,11 @@ namespace XXXBlazor.Client.Models
         public Hdf5NodeType NodeType { get; set; }
 
         /// <summary>
+        /// 부모 노드
+        /// </summary>
+        public Hdf5TreeNode? Parent { get; set; }
+
+        /// <summary>
         /// 자식 노드 목록 (그룹인 경우)
         /// </summary>
         public List<Hdf5TreeNode> Children { get; set; }
