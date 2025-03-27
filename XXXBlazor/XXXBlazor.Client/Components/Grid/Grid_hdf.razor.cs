@@ -39,7 +39,7 @@ namespace XXXBlazor.Client.Pages
         {
             renderTimer.Stop();
             counter++;
-            Console.WriteLine($"Grid Render Total Cnt[{counter}] Time: {renderTimer.ElapsedMilliseconds} ms");
+            //Console.WriteLine($"Grid Render Total Cnt[{counter}] Time: {renderTimer.ElapsedMilliseconds} ms");
         }
 
         protected override bool ShouldRender()

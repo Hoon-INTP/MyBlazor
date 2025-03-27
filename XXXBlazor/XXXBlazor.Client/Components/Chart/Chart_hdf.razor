@@ -15,8 +15,9 @@
                 TValue="object"
                 Name="@col.ColumnName"
                 ArgumentField="@(row => DisplayData.Rows.IndexOf(row) + 1)"
-                ValueField="@(row => row[col.ColumnName])">
+                ValueField="@(row => GetDataValue(row, col))">
             </DxChartLineSeries>
+
         }
         <DxChartLegend
             Position="RelativePosition.Outside"

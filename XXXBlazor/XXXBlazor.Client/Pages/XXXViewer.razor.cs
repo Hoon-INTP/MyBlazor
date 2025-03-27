@@ -39,9 +39,8 @@ namespace XXXBlazor.Client.Pages
         protected List<List<DatasetData>>? nodeData;
 
         // Display Data
-        protected DataTable? convertedData;
-
-        private Stopwatch loaderTimer;
+        protected DataTable? GridData;
+        protected DataTable? ChartData;
 
         // JavaScript 초기화를 OnAfterRenderAsync로 이동
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -279,17 +278,11 @@ namespace XXXBlazor.Client.Pages
 
         protected async Task HandleNodeClicked(Hdf5TreeNode node)
         {
-            loaderTimer = new Stopwatch();
-            loaderTimer.Start();
-
             selectedNode = node;
 
             nodeData = await LoadNodeData(node);
 
-            convertedData = ConvertToDataTable(nodeData);
-
-            loaderTimer.Stop();
-            Console.WriteLine($"Data Load & Convert Time: {loaderTimer.ElapsedMilliseconds} ms");
+            GridData = ChartData = ConvertToDataTable(nodeData);
 
             StateHasChanged();
         }
