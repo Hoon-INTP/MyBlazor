@@ -419,7 +419,7 @@ namespace XXXBlazor.Client.Pages
                 }
             }
 
-            for(int j = 0; j < nodeData.Count; j++)
+            for(int j = 0; j < RowCnt; j++)
             {
                 dt.Columns.Add($"{ColName[j]}", typeof(DatasetData));
             }

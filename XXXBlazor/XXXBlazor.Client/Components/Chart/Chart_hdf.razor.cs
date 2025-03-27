@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using XXXBlazor.Client.Models;
 using System.Data;
+using System.Diagnostics;
 
 namespace XXXBlazor.Client.Pages
 {
@@ -8,27 +9,56 @@ namespace XXXBlazor.Client.Pages
     {
         [Parameter]
         public DataTable? DisplayData { get; set; }
+        private DataTable? OldDisplayData { get; set; }
+        //[Parameter]
+        //public List<List<DatasetData>>? DisplayData { get; set; }
+        //public List<List<DatasetData>>? OldDisplayData { get; set; }
 
-        protected bool IsDataLoading = true;
+        protected bool needRender = false;
+
+        private Stopwatch renderTimer = new Stopwatch();
+
+        static int counter = 0;
+
         protected IEnumerable<DatasetData>? TestData = null;
 
-        /* protected override async Task OnInitializedAsync()
+        protected override async Task OnParametersSetAsync()
         {
-            StateHasChanged();
-            List<DatasetData> temp = new List<DatasetData>();
-
-            for(int i = 0; i < 60; i++)
+            if ( OldDisplayData != DisplayData )
             {
-                temp.Add(new DatasetData() { Name = "Test1", Index = i, Data = i*1.1 + 0.3 });
-                //await Task.Delay(100);
-                Console.WriteLine($"Data Added [{i}]");
+                needRender = true;
+                counter = 0;
+                OldDisplayData = DisplayData;
+                renderTimer = new Stopwatch();
+                renderTimer.Start();
             }
+            else
+            {
+                needRender = false;
+            }
+        }
 
-            await Task.Delay(100);
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            renderTimer.Stop();
+            counter++;
+            Console.WriteLine($"Chart Render Total Cnt[{counter}] Time: {renderTimer.ElapsedMilliseconds} ms");
+        }
 
-            TestData = temp.AsQueryable();
+        protected override bool ShouldRender()
+        {
+            return needRender;
+        }
 
-            IsDataLoading = true;
-        } */
+        protected void PrintField()
+        {
+            foreach (DataColumn col in DisplayData.Columns)
+            {
+                foreach ( DataRow row in DisplayData.Rows )
+                {
+                    Console.WriteLine($"ArgField: {DisplayData.Rows.IndexOf(row) + 1} ValField: {(DatasetData)row[col.ColumnName]}");
+                }
+            }
+        }
     }
 }

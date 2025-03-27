@@ -1,19 +1,28 @@
-
+@using System.Data
 @using XXXBlazor.Client.Models
 @using DevExpress.Blazor
 
 @inherits Hdf5ChartBase
 
-@if ( null != TestData )
+@if ( null != DisplayData )
 {
-    <DxChart Data="@TestData">
-        <DxChartLineSeries Name="TEST 01"
-                    T="DatasetData"
-                    TArgument="int"
-                    TValue="double"
-                    ArgumentField="@(t => t.Index)"
-                    ValueField="@(t => (double)t.Data)"
-                    SummaryMethod="Enumerable.Sum"/>
-        <DxChartLegend Position="RelativePosition.Outside" HorizontalAlignment="HorizontalAlignment.Right" />
+    <DxChart T="DataRow" Data="@DisplayData.AsEnumerable()">
+        @foreach (DataColumn col in DisplayData.Columns)
+        {
+            <DxChartLineSeries
+                T="DataRow"
+                TArgument="int"
+                TValue="object"
+                Name="@col.ColumnName"
+                ArgumentField="@(row => DisplayData.Rows.IndexOf(row) + 1)"
+                ValueField="@(row => row[col.ColumnName])">
+            </DxChartLineSeries>
+        }
+        <DxChartLegend
+            Position="RelativePosition.Outside"
+            HorizontalAlignment="HorizontalAlignment.Right" />
     </DxChart>
+
 }
+
+<DxButton Text="Print" Click="@PrintField"></DxButton>

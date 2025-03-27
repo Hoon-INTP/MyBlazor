@@ -5,20 +5,13 @@
 
 @inherits Hdf5GridBase
 
-@if(IsDataLoading)
+@if(null != DisplayData)
 {
-    <h4>Data Loading...!</h4>
-}
-else
-{
-    @if(null != DisplayData)
-    {
-        <DxGrid data="@DisplayData" CssClass="grid-size" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false">
-            <Columns>
-                 @foreach (DataColumn col in DisplayData.Columns) {
-                    <DxGridDataColumn FieldName='@($"{col.ColumnName}.Data")' Caption='@($"{col.ColumnName}")' ></DxGridDataColumn>
-                }
-            </Columns>
-        </DxGrid>
-    }
+    <DxGrid data="@DisplayData" CssClass="grid-size" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false">
+        <Columns>
+             @foreach (DataColumn col in DisplayData.Columns) {
+                <DxGridDataColumn FieldName='@($"{col.ColumnName}.Data")' Caption='@($"{col.ColumnName}")' ></DxGridDataColumn>
+            }
+        </Columns>
+    </DxGrid>
 }

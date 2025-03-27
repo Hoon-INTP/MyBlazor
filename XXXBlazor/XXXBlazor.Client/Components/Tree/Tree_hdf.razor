@@ -18,24 +18,6 @@
     }
     else
     {
-        <DxTreeView
-            Data="@nodesList"
-            SizeMode="SizeMode.Small"
-            AllowSelectNodes="true"
-            SelectionChanged="OnNodeSelected"
-            ShowFilterPanel="true"
-            FilterMinLength="2"
-            FilterMode="NavigationFilterMode.EntireBranch">
-
-            <DataMappings>
-                <DxTreeViewDataMapping
-                    Text="Name"
-                    Children="Children"
-                    Name="Path"/>
-            </DataMappings>
-
-        </DxTreeView>
-
         @if(ShowAttribute)
         {
             @if (currentNode != null)
@@ -106,6 +88,26 @@
                 </div>
             }
         }
+
+        <DxTreeView
+            Data="@nodesList"
+            SizeMode="SizeMode.Small"
+            AllowSelectNodes="true"
+            SelectionChanged="OnNodeSelected"
+            ShowFilterPanel="true"
+            FilterMinLength="2"
+            FilterMode="NavigationFilterMode.EntireBranch">
+
+            <DataMappings>
+                <DxTreeViewDataMapping
+                    Text="Name"
+                    Children="Children"
+                    Name="Path"/>
+            </DataMappings>
+
+        </DxTreeView>
+
+
     }
 </div>
 
