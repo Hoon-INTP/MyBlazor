@@ -1,105 +1,50 @@
 using Microsoft.AspNetCore.Components;
 using XXXBlazor.Client.Models;
-using DevExpress.Blazor;
 using System.Data;
-using DevExpress.ClipboardSource.SpreadsheetML;
-using DevExpress.XtraEditors.Filtering;
+using System.Diagnostics;
 
 namespace XXXBlazor.Client.Pages
 {
     public class Hdf5GridBase : ComponentBase
     {
         [Parameter]
-        public List<List<DatasetData>>? NodeData { get; set; } = null;
+        public DataTable? DisplayData { get; set; }
+        private DataTable? OldDisplayData { get; set; }
 
-        protected DataTable convertedData;
+        protected bool needRender = false;
 
-        protected bool IsDataLoading = false;
+        protected bool IsDataLoading => needRender;
 
-        //protected List<DatasetData>? NodeData { get; set; }
+        private Stopwatch renderTimer = new Stopwatch();
+
+        static int counter = 0;
 
         protected override async Task OnParametersSetAsync()
         {
-            if(NodeData != null)
+            if ( OldDisplayData != DisplayData )
             {
-                await Task.Run(() => convertedData = ConvertToDataTable(NodeData));
+                needRender = true;
+                counter = 0;
+                OldDisplayData = DisplayData;
+                renderTimer = new Stopwatch();
+                renderTimer.Start();
+            }
+            else
+            {
+                needRender = false;
             }
         }
 
-        private DataTable ConvertToDataTable(List<List<DatasetData>> nodeData)
+        protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-            var dt = new DataTable();
-
-            for(int j = 0; j < nodeData.Count; j++)
-            {
-                dt.Columns.Add($"Data_{j}", typeof(DatasetData));
-            }
-
-            int i = 0;
-            while(i < nodeData.Count)
-            {
-                DataRow row = dt.NewRow();
-                for(int j = 0; j < nodeData.Count; j++)
-                {
-                    row[$"Data_{j}"] = nodeData[j][i];
-                }
-
-                dt.Rows.Add(row);
-                i++;
-            }
-
-            return dt;
+            renderTimer.Stop();
+            counter++;
+            Console.WriteLine($"Render Total Cnt[{counter}] Time: {renderTimer.ElapsedMilliseconds} ms");
         }
 
-        protected RenderFragment BuildColumnsGrid()
+        protected override bool ShouldRender()
         {
-            List<List<DatasetData>> temp = NodeData;
-
-            RenderFragment columns = b =>
-            {
-                foreach (var data in temp)
-                {
-                    if (data != null)
-                    {
-                        foreach (var item in data)
-                        {
-                            b.OpenComponent(0, typeof(DxGridDataColumn));
-                            b.AddAttribute(0, "FieldName", item.Data);
-                            b.CloseComponent();
-                        }
-                    }
-                }
-            };
-            return columns;
+            return needRender;
         }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        protected void ConsoleData()
-        {
-            if(NodeData == null)
-            {
-                Console.WriteLine("NodeData is null");
-                return;
-            }
-
-            Console.WriteLine($"NodeData [{NodeData[0][0].Name} : {NodeData[0][0].Data}] Count: {NodeData.Count}");
-
-        }
-
-        protected bool bDebugMode = false;
-        protected void EnableDebugMode()
-        {
-            bDebugMode = !bDebugMode;
-        }
-
-        protected static string FormatArray(object value) => value switch
-        {
-            int[] array => string.Join(", ", array),
-            double[] array => string.Join(", ", Array.ConvertAll(array, x => x.ToString("F2"))),
-            string[] array => string.Join(" | ", array),
-            _ => "Not an array"
-        };
     }
 }

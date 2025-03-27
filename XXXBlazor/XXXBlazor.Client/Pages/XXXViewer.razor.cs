@@ -1,3 +1,4 @@
+using System.Data;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Components;
@@ -5,8 +6,6 @@ using Microsoft.JSInterop;
 using DevExpress.Blazor;
 using XXXBlazor.Client.Services;
 using XXXBlazor.Client.Models;
-
-
 
 namespace XXXBlazor.Client.Pages
 {
@@ -37,8 +36,12 @@ namespace XXXBlazor.Client.Pages
         protected Hdf5TreeNode? selectedNode;
 
         // Node Data
-        protected List<List<DatasetData>>? gridData;
-        protected List<List<DatasetData>>? chartData;
+        protected List<List<DatasetData>>? nodeData;
+
+        // Display Data
+        protected DataTable? convertedData;
+
+        private Stopwatch loaderTimer;
 
         // JavaScript 초기화를 OnAfterRenderAsync로 이동
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -109,8 +112,6 @@ namespace XXXBlazor.Client.Pages
             }
 
             await InvokeAsync(StateHasChanged);
-
-            //Console.WriteLine($"SelectedFilesChanged {SelectedFilesCount}");
         }
 
         protected async Task OnFilesUploading(FilesUploadingEventArgs args)
@@ -278,12 +279,17 @@ namespace XXXBlazor.Client.Pages
 
         protected async Task HandleNodeClicked(Hdf5TreeNode node)
         {
+            loaderTimer = new Stopwatch();
+            loaderTimer.Start();
+
             selectedNode = node;
 
-            var data = await LoadNodeData(node);
+            nodeData = await LoadNodeData(node);
 
-            gridData = data;
-            chartData = data;
+            convertedData = ConvertToDataTable(nodeData);
+
+            loaderTimer.Stop();
+            Console.WriteLine($"Data Load & Convert Time: {loaderTimer.ElapsedMilliseconds} ms");
 
             StateHasChanged();
         }
@@ -387,6 +393,49 @@ namespace XXXBlazor.Client.Pages
             }
 
             return NodeData;
+        }
+
+        private DataTable ConvertToDataTable(List<List<DatasetData>> nodeData)
+        {
+            var dt = new DataTable();
+
+            int RowCnt, ColCnt;
+
+            if ( 0 == nodeData.Count ) return dt;
+
+            RowCnt = nodeData.Count;
+
+            if ( 0 == nodeData[0].Count ) return dt;
+
+            ColCnt = nodeData[0].Count;
+
+            List<string> ColName = new List<string>();
+
+            if(nodeData != null && nodeData[0] != null)
+            {
+                for(int i = 0; i < RowCnt; i++)
+                {
+                    ColName.Add(nodeData[i][0].Name);
+                }
+            }
+
+            for(int j = 0; j < nodeData.Count; j++)
+            {
+                dt.Columns.Add($"{ColName[j]}", typeof(DatasetData));
+            }
+
+            for(int i = 0; i < ColCnt; i++)
+            {
+                DataRow row = dt.NewRow();
+                for(int j = 0; j < RowCnt; j++)
+                {
+                    row[$"{ColName[j]}"] = nodeData[j][i];
+                }
+
+                dt.Rows.Add(row);
+            }
+
+            return dt;
         }
 
         [JSInvokable]

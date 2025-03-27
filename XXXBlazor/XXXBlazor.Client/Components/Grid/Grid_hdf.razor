@@ -11,86 +11,14 @@
 }
 else
 {
-    <DxGrid data="@convertedData" CssClass="grid-size" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false">
-        <Columns>
-             @foreach (DataColumn col in convertedData.Columns) {
-                <DxGridDataColumn FieldName='@($"{col.ColumnName}.Data")'></DxGridDataColumn>
-            }
-        </Columns>
-    </DxGrid>
-
-    <div style="mt-3; mb-3;">
-        <DxButton RenderStyle="ButtonRenderStyle.Info" Text="Debug : Check Data" Click="@EnableDebugMode" />
-    </div>
-}
-
-@*
-@if (!IsDataLoading && null != selectedNode && bDebugMode)
-{
-    <div>
-        <DxButton RenderStyle="ButtonRenderStyle.Info" Text="Console Data" Click="@ConsoleData" />
-        <h4>[1d2d3d]</h4>
-            [THIS]<br>
-            "@selectedNode"<br>
-            <br>
-
-            [Name]<br>
-            "@selectedNode.Name"<br>
-            <br>
-
-            [Path]<br>
-            "@selectedNode.Path"<br>
-            <br>
-
-            [NodeType]<br>
-            "@selectedNode.NodeType"<br>
-            <br>
-
-            [Parent]<br>
-            "@selectedNode.Parent"<br>
-            "@selectedNode.Parent.Name"<br>
-            <br>
-
-            [Children]<br>
-            "@selectedNode.Children"<br>
-            @foreach (var child in selectedNode.Children)
-            {
-                <p>@child.Name</p>
-            }
-            <br>
-
-            [Attributes]<br>
-            "@selectedNode.Attributes"<br>
-            @foreach (var attr in selectedNode.Attributes)
-            {
-                <p>@attr.Key: @attr.Value</p>
-            }
-            <br>
-
-            [Dimensions]<br>
-            "@selectedNode.Dimensions"<br>
-            @if (selectedNode.Dimensions != null)
-            {
-                @foreach (var dim in selectedNode.Dimensions)
-                {
-                    @($"{dim} ")
+    @if(null != DisplayData)
+    {
+        <DxGrid data="@DisplayData" CssClass="grid-size" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false">
+            <Columns>
+                 @foreach (DataColumn col in DisplayData.Columns) {
+                    <DxGridDataColumn FieldName='@($"{col.ColumnName}.Data")' Caption='@($"{col.ColumnName}")' ></DxGridDataColumn>
                 }
-            }
-            <br>
-            <br>
-
-            [DataType]<br>
-            "@selectedNode.DataType"<br>
-            <br>
-
-            [Data]<br>
-            "@selectedNode.Data"<br>
-            "@FormatArray(selectedNode.Data)"<br>
-            <br>
-
-        <h4>[1d2d3d]</h4>
-    </div>
-
+            </Columns>
+        </DxGrid>
+    }
 }
-
-*@

@@ -1,15 +1,18 @@
 using Microsoft.AspNetCore.Components;
 using XXXBlazor.Client.Models;
+using System.Data;
 
 namespace XXXBlazor.Client.Pages
 {
     public class Hdf5ChartBase : ComponentBase
     {
+        [Parameter]
+        public DataTable? DisplayData { get; set; }
+
         protected bool IsDataLoading = true;
-        protected IEnumerable<DatasetData> TestData;
+        protected IEnumerable<DatasetData>? TestData = null;
 
-
-        protected override async Task OnInitializedAsync()
+        /* protected override async Task OnInitializedAsync()
         {
             StateHasChanged();
             List<DatasetData> temp = new List<DatasetData>();
@@ -26,6 +29,6 @@ namespace XXXBlazor.Client.Pages
             TestData = temp.AsQueryable();
 
             IsDataLoading = true;
-        }
+        } */
     }
 }

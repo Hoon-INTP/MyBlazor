@@ -18,13 +18,22 @@
     }
     else
     {
-        <DxTreeView Data="@nodesList" AllowSelectNodes="true" SelectionChanged="OnNodeSelected" ShowFilterPanel="true" FilterMinLength="2" FilterMode="NavigationFilterMode.EntireBranch">
+        <DxTreeView
+            Data="@nodesList"
+            SizeMode="SizeMode.Small"
+            AllowSelectNodes="true"
+            SelectionChanged="OnNodeSelected"
+            ShowFilterPanel="true"
+            FilterMinLength="2"
+            FilterMode="NavigationFilterMode.EntireBranch">
+
             <DataMappings>
                 <DxTreeViewDataMapping
                     Text="Name"
                     Children="Children"
                     Name="Path"/>
             </DataMappings>
+
         </DxTreeView>
 
         @if(ShowAttribute)
@@ -32,6 +41,7 @@
             @if (currentNode != null)
             {
                 <div>
+                    <br>
                     <h5>노드 정보</h5>
                     <div>
                         <p><strong>이름:</strong> @currentNode.Name</p>

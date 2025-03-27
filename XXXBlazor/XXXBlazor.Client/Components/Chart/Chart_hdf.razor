@@ -4,14 +4,16 @@
 
 @inherits Hdf5ChartBase
 
-<DxChart Data="@TestData">
-    <DxChartLineSeries Name="TEST 01"
-                T="DatasetData"
-                TArgument="int"
-                TValue="double"
-                ArgumentField="@(t => t.Index)"
-                ValueField="@(t => (double)t.Data)"
-                SummaryMethod="Enumerable.Sum"/>
-    <DxChartLegend Position="RelativePosition.Outside" HorizontalAlignment="HorizontalAlignment.Right" />
-</DxChart>
-
+@if ( null != TestData )
+{
+    <DxChart Data="@TestData">
+        <DxChartLineSeries Name="TEST 01"
+                    T="DatasetData"
+                    TArgument="int"
+                    TValue="double"
+                    ArgumentField="@(t => t.Index)"
+                    ValueField="@(t => (double)t.Data)"
+                    SummaryMethod="Enumerable.Sum"/>
+        <DxChartLegend Position="RelativePosition.Outside" HorizontalAlignment="HorizontalAlignment.Right" />
+    </DxChart>
+}

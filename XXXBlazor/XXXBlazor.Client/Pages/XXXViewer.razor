@@ -33,7 +33,7 @@ else
                                             <div>
                                                 <DxFileInput
                                                     Visible="true"
-                                                    ShowFileList="false"
+                                                    ShowFileList="true"
                                                     MaxFileCount="10"
                                                     MaxFileSize="@MaxFileSize"
                                                     AllowedFileExtensions="@(new List<string> { ".hdf5", ".h5" })"
@@ -73,16 +73,16 @@ else
             <DxStackLayoutItem Length="85%">
                 <Template>
                     <div>
-                        <DxSplitter Height="800px" Width="100%">
+                        <DxSplitter Height="3000px" Width="100%">
                             <Panes>
                                 <DxSplitterPane>
                                     <DxSplitter Orientation="Orientation.Vertical">
                                         <Panes>
                                             <DxSplitterPane MaxSize="90%" AllowCollapse="true">
-                                                    <Grid_hdf NodeData="@gridData"></Grid_hdf>
+                                                    <Grid_hdf DisplayData="@convertedData"></Grid_hdf>
                                             </DxSplitterPane>
                                             <DxSplitterPane MaxSize="90%" AllowCollapse="true">
-                                                    <Chart_hdf></Chart_hdf>
+                                                    <Chart_hdf DisplayData="@convertedData"></Chart_hdf>
                                             </DxSplitterPane>
                                         </Panes>
                                     </DxSplitter>
