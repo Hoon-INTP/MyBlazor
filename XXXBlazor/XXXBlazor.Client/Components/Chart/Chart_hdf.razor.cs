@@ -2,14 +2,17 @@ using Microsoft.AspNetCore.Components;
 using XXXBlazor.Client.Models;
 using System.Data;
 using System.Diagnostics;
+using DevExpress.Blazor;
 
 namespace XXXBlazor.Client.Pages
 {
     public class Hdf5ChartBase : ComponentBase
     {
+        protected DxChartBase hdfChart;
+
         [Parameter]
         public DataTable? DisplayData { get; set; }
-        private DataTable? OldDisplayData { get; set; }
+        private DataTable? OldDisplayData;
         //[Parameter]
         //public List<List<DatasetData>>? DisplayData { get; set; }
         //public List<List<DatasetData>>? OldDisplayData { get; set; }
@@ -28,13 +31,16 @@ namespace XXXBlazor.Client.Pages
             Console.WriteLine($"Chart OnParametersSetAsync");
             counter1++;
 
-            if ( OldDisplayData != DisplayData )
+            bool IsDataChanged = DataTableCompare.AreEqual(OldDisplayData, DisplayData);
+
+            if ( !IsDataChanged )
             {
-                Console.WriteLine($"Chart OnParametersSetAsync: needRender {counter1}");
+                Console.WriteLine($"Chart OnParametersSetAsync: needRender {counter1} {IsDataChanged}");
                 needRender = true;
                 counter = 0;
-                OldDisplayData = DisplayData;
+                OldDisplayData = DisplayData.Copy();
                 Console.WriteLine($"{DisplayData!=null}");
+                //hdfChart.RefreshData();
                 renderTimer = new Stopwatch();
                 renderTimer.Start();
             }
@@ -63,9 +69,10 @@ namespace XXXBlazor.Client.Pages
         }
 
 
-        protected void PrintField()
+        protected async Task PrintField()
         {
-            StateHasChanged();
+            await hdfChart.RedrawAsync();
+            //StateHasChanged();
             //foreach (DataColumn col in DisplayData.Columns)
             //{
             //    foreach ( DataRow row in DisplayData.Rows )

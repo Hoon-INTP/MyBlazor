@@ -6,7 +6,7 @@
 
 @if ( null != DisplayData )
 {
-    <DxChart T="DataRow" Data="@DisplayData.AsEnumerable()">
+    <DxChart ref="@hdfChart" T="DataRow" Data="@DisplayData.AsEnumerable()">
         @foreach (DataColumn col in DisplayData.Columns)
         {
             <DxChartLineSeries
@@ -23,7 +23,6 @@
             Position="RelativePosition.Outside"
             HorizontalAlignment="HorizontalAlignment.Right" />
     </DxChart>
-
 }
 
 <DxButton Text="Print" Click="@PrintField"></DxButton>

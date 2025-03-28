@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Components;
-using XXXBlazor.Client.Models;
 using System.Data;
 using System.Diagnostics;
 
@@ -21,11 +20,11 @@ namespace XXXBlazor.Client.Pages
 
         protected override async Task OnParametersSetAsync()
         {
-            if ( OldDisplayData != DisplayData )
+            if ( !DataTableCompare.AreEqual(OldDisplayData, DisplayData) )
             {
                 needRender = true;
                 counter = 0;
-                OldDisplayData = DisplayData;
+                OldDisplayData = DisplayData.Copy();
                 renderTimer = new Stopwatch();
                 renderTimer.Start();
             }
