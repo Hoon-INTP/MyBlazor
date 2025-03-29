@@ -39,8 +39,8 @@ namespace XXXBlazor.Client.Pages
         protected List<List<DatasetData>>? nodeData;
 
         // Display Data
-        protected DataTable? GridData;
-        protected DataTable? ChartData;
+        public DataTable? GridData;
+        public DataTable? ChartData;
 
         // JavaScript 초기화를 OnAfterRenderAsync로 이동
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -282,9 +282,9 @@ namespace XXXBlazor.Client.Pages
 
             nodeData = await LoadNodeData(node);
 
-            GridData = ChartData = ConvertToDataTable(nodeData);
+            await Task.Run(() => GridData = ChartData = ConvertToDataTable(nodeData).Copy());
 
-            StateHasChanged();
+            //StateHasChanged();
         }
 
         private async Task<List<List<DatasetData>>> LoadNodeData(Hdf5TreeNode SelNode)
@@ -293,8 +293,6 @@ namespace XXXBlazor.Client.Pages
 
             try
             {
-                Console.WriteLine("LoadNodeData 시작");
-
                 if (SelNode != null)
                 {
                     if (SelNode.NodeType == Hdf5NodeType.Group)
@@ -382,7 +380,7 @@ namespace XXXBlazor.Client.Pages
             }
             finally
             {
-                Console.WriteLine("LoadNodeData 종료");
+
             }
 
             return NodeData;
@@ -446,7 +444,7 @@ namespace XXXBlazor.Client.Pages
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"OnChunkProcessed 오류: {ex}");
+                Console.WriteLine($"OnChunkProcessed Error: {ex.Message}");
             }
         }
 

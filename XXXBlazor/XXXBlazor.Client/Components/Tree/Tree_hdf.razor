@@ -130,12 +130,8 @@
 
     protected override void OnParametersSet()
     {
-        //Console.WriteLine("OnParametersSet 호출됨");
-
         if (selectedNode != null)
         {
-            //Console.WriteLine($"Root 노드: {selectedNode.Name}, {selectedNode.Path}");
-            //Console.WriteLine($"자식 노드 수: {selectedNode.Children?.Count ?? 0}");
 
             if(nodesList.Count > 0)
             {
@@ -149,7 +145,6 @@
                 currentNode = selectedNode;
             }
 
-            // 노드 맵 초기화
             if(nodePathMap.Count > 0)
             {
                 nodePathMap.Clear();
@@ -157,7 +152,6 @@
 
             BuildNodePathMap(selectedNode);
 
-            //Console.WriteLine($"노드 맵 크기: {nodePathMap.Count}");
         }
         else
         {
@@ -279,16 +273,13 @@
         {
             if (args.NodeInfo == null)
             {
-                //Console.WriteLine("NodeInfo가 null입니다.");
                 return;
             }
 
             string? nodePath = args.NodeInfo.Name;
-            //Console.WriteLine($"선택된 노드 경로: {nodePath}");
 
             if (string.IsNullOrEmpty(nodePath))
             {
-                //Console.WriteLine("선택된 노드의 경로가 null 또는 빈 문자열입니다.");
                 return;
             }
 
@@ -299,7 +290,7 @@
             }
             else
             {
-                //Console.WriteLine($"경로 '{nodePath}'에 해당하는 노드를 찾을 수 없습니다.");
+
             }
         }
         catch (Exception ex)

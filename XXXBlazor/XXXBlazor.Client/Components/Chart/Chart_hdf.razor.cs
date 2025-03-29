@@ -12,53 +12,89 @@ namespace XXXBlazor.Client.Pages
 
         [Parameter]
         public DataTable? DisplayData { get; set; }
-        private DataTable? OldDisplayData;
-        //[Parameter]
-        //public List<List<DatasetData>>? DisplayData { get; set; }
-        //public List<List<DatasetData>>? OldDisplayData { get; set; }
+        protected DataTable? OldDisplayData;
 
-        protected bool needRender = false;
+        protected bool isDataChanged = false;
+        protected bool isDoneFirstRender = false;
+        protected bool isChartVisible = false;
+        protected int chartRenderKey = 0;
 
-        private Stopwatch renderTimer = new Stopwatch();
+        //필수?
+        private SemaphoreSlim _dataProcessingSemaphore = new SemaphoreSlim(1, 1);
 
-        static int counter = 0;
-        static int counter1 = 0;
-
-        protected IEnumerable<DatasetData>? TestData = null;
+        protected override async Task OnInitializedAsync()
+        {
+            // 초기 상태 설정
+            isChartVisible = (OldDisplayData != null);
+            await base.OnInitializedAsync();
+        }
 
         protected override async Task OnParametersSetAsync()
         {
-            Console.WriteLine($"Chart OnParametersSetAsync");
-            counter1++;
+            await _dataProcessingSemaphore.WaitAsync();
 
-            bool IsDataChanged = DataTableCompare.AreEqual(OldDisplayData, DisplayData);
+            try
+            {
+                bool _isDataChanged = false;
 
-            if ( !IsDataChanged )
-            {
-                Console.WriteLine($"Chart OnParametersSetAsync: needRender {counter1} {IsDataChanged}");
-                needRender = true;
-                counter = 0;
-                OldDisplayData = DisplayData.Copy();
-                Console.WriteLine($"{DisplayData!=null}");
-                //hdfChart.RefreshData();
-                renderTimer = new Stopwatch();
-                renderTimer.Start();
+                await Task.Run(() =>
+                {
+                    _isDataChanged = !DataTableCompare.AreEqual(OldDisplayData, DisplayData);
+                });
+
+                if ( _isDataChanged )
+                {
+                    isDataChanged = true;
+                    isChartVisible = false;
+
+                    StateHasChanged();
+                    await Task.Delay(10);
+
+                    await Task.Run(() =>
+                    {
+                        OldDisplayData = DisplayData != null ? DisplayData.Copy() : null;
+                    });
+
+                    chartRenderKey++;
+
+                    isChartVisible = true;
+                }
+                else
+                {
+                    isDataChanged = false;
+
+                    if (!isChartVisible && OldDisplayData != null)
+                    {
+                        isChartVisible = true;
+                        StateHasChanged();
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                needRender = false;
+                Console.WriteLine($"OnParametersSetAsync Error: {ex.Message}");
             }
+            finally
+            {
+                _dataProcessingSemaphore.Release();
+            }
+
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-            renderTimer.Stop();
-            counter++;
-            Console.WriteLine($"Chart Render Total Cnt[{counter}] Time: {renderTimer.ElapsedMilliseconds} ms");
+            if (firstRender)
+            {
+                isDoneFirstRender = true;
+            }
+
+            await base.OnAfterRenderAsync(firstRender);
         }
 
         protected override bool ShouldRender()
         {
+            bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && OldDisplayData != null);
+
             return needRender;
         }
 
@@ -71,15 +107,7 @@ namespace XXXBlazor.Client.Pages
 
         protected async Task PrintField()
         {
-            await hdfChart.RedrawAsync();
-            //StateHasChanged();
-            //foreach (DataColumn col in DisplayData.Columns)
-            //{
-            //    foreach ( DataRow row in DisplayData.Rows )
-            //    {
-            //        Console.WriteLine($"ArgField: {DisplayData.Rows.IndexOf(row) + 1} ValField: {(DatasetData)row[col.ColumnName]}");
-            //    }
-            //}
+            //await Task.Run(hdfChart.RefreshData);
         }
     }
 }

@@ -4,17 +4,17 @@
 
 @inherits Hdf5ChartBase
 
-@if ( null != DisplayData )
+@if ( null != OldDisplayData )
 {
-    <DxChart ref="@hdfChart" T="DataRow" Data="@DisplayData.AsEnumerable()">
-        @foreach (DataColumn col in DisplayData.Columns)
+    <DxChart @key="chartRenderKey" ref="@hdfChart" T="DataRow" Data="@OldDisplayData.AsEnumerable()">
+        @foreach (DataColumn col in OldDisplayData.Columns)
         {
             <DxChartLineSeries
                 T="DataRow"
                 TArgument="int"
                 TValue="object"
                 Name="@col.ColumnName"
-                ArgumentField="@(row => DisplayData.Rows.IndexOf(row) + 1)"
+                ArgumentField="@(row => OldDisplayData.Rows.IndexOf(row) + 1)"
                 ValueField="@(row => GetDataValue(row, col))">
             </DxChartLineSeries>
 
