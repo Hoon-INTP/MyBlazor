@@ -1,11 +1,17 @@
-@* @using XXXBlazor.Client.Models
+@using XXXBlazor.Client.Models
 @using DevExpress.Blazor
 
 @inherits Hdf5AttrBase
 
-@if(ShowAttribute)
-{
-    @if (currentNode != null)
+<div>
+    <DxCheckBox CheckType="CheckType.Switch"
+                Checked="@ShowAttribute"
+                CheckedChanged="@((bool t) => CheckedChanged(t))"
+                Alignment="CheckBoxContentAlignment.Left">
+                Show Attribute
+    </DxCheckBox>
+
+    @if(ShowAttribute && null != currentNode)
     {
         <div>
             <h5>노드 정보</h5>
@@ -70,6 +76,6 @@
                 }
             </div>
         </div>
+
     }
-}
- *@
+</div>

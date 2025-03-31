@@ -3,6 +3,7 @@
 @using XXXBlazor.Client.Components.Grid
 @using XXXBlazor.Client.Components.Chart
 @using XXXBlazor.Client.Components.Tree
+@using XXXBlazor.Client.Components.Attribute
 
 @inherits XXXViewerBase
 
@@ -46,7 +47,14 @@ else
                                     </DxStackLayoutItem>
 
                                     <DxStackLayoutItem Length="30px">
-                                        @* Attribute *@
+                                        <Template>
+                                            <div>
+                                                <Attr_hdf
+                                                    currentNode="@selectedNode">
+                                                </Attr_hdf>
+                                            </div>
+                                        </Template>
+
                                     </DxStackLayoutItem>
 
                                     <DxStackLayoutItem Length="100%-100px">
