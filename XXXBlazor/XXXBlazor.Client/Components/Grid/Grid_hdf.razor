@@ -9,7 +9,8 @@
 {
     <DxGrid data="@DisplayData" CssClass="grid-size" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false">
         <Columns>
-             @foreach (DataColumn col in DisplayData.Columns) {
+            @foreach (DataColumn col in DisplayData.Columns)
+            {
                 <DxGridDataColumn FieldName='@($"{col.ColumnName}.Data")' Caption='@($"{col.ColumnName}")' ></DxGridDataColumn>
             }
         </Columns>

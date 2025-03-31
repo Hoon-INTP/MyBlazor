@@ -7,9 +7,12 @@
 @if ( null != OldDisplayData )
 {
     <DxChart @key="chartRenderKey" ref="@hdfChart" T="DataRow" Data="@OldDisplayData.AsEnumerable()">
+        <DxChartAnimationSettings Enabled="false"></DxChartAnimationSettings>
+        <DxChartZoomAndPanSettings ArgumentAxisZoomAndPanMode="ChartAxisZoomAndPanMode.Both" />
         @foreach (DataColumn col in OldDisplayData.Columns)
         {
             <DxChartLineSeries
+                Visible="false"
                 T="DataRow"
                 TArgument="int"
                 TValue="object"
@@ -19,8 +22,13 @@
             </DxChartLineSeries>
 
         }
+
         <DxChartLegend
+            Visible="@isLengendVisible"
+            AllowToggleSeries="true"
+            Orientation="Orientation.Vertical"
             Position="RelativePosition.Outside"
+            HoverMode="ChartLegendHoverMode.None"
             HorizontalAlignment="HorizontalAlignment.Right" />
     </DxChart>
 }

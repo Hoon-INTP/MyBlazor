@@ -163,7 +163,7 @@ namespace XXXBlazor.Client.Pages
                         if(file.Size > 5 * 1024 * 1024) //1MB
                         {
                             //Console.WriteLine("over 5MB");
-                            int chunkSize1 = 64 * 1024; //16KB
+                            int chunkSize1 = 64 * 1024; //64KB
                             byte[] buffer = new byte[chunkSize1];
                             int bytesRead;
                             long totalBytesRead = 0;
@@ -173,7 +173,7 @@ namespace XXXBlazor.Client.Pages
                                 await memoryStream.WriteAsync(buffer, 0, bytesRead);
                                 totalBytesRead += bytesRead;
 
-                                if (totalBytesRead % (4 * chunkSize1) == 0) // per 64KB (4chunks)
+                                if (totalBytesRead % (4 * chunkSize1) == 0) // per 4 * 64KB (4chunks)
                                 {
                                     await Task.Delay(1);
                                 }

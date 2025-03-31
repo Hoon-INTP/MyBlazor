@@ -17,6 +17,7 @@ namespace XXXBlazor.Client.Pages
         protected bool isDataChanged = false;
         protected bool isDoneFirstRender = false;
         protected bool isChartVisible = false;
+        protected bool isLengendVisible = false;
         protected int chartRenderKey = 0;
 
         //필수?
@@ -87,14 +88,14 @@ namespace XXXBlazor.Client.Pages
             {
                 isDoneFirstRender = true;
             }
-
+            Console.WriteLine("{0}{1:HH:mm:ss.fff}", "O", DateTime.Now);
             await base.OnAfterRenderAsync(firstRender);
         }
 
         protected override bool ShouldRender()
         {
             bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && OldDisplayData != null);
-
+            Console.WriteLine("{0}{1:HH:mm:ss.fff}",needRender?"O":"X", DateTime.Now);
             return needRender;
         }
 

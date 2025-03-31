@@ -22,9 +22,7 @@ public static class DataTableCompare
     /// <param name="chunkSize">처리할 청크의 크기 (메모리 사용량 조절)</param>
     /// <param name="degreeOfParallelism">사용할 최대 스레드 수 (기본값: CPU 코어 수 - 1)</param>
     /// <returns>두 테이블이 동일하면 true, 그렇지 않으면 false</returns>
-    public static bool AreEqual(DataTable? table1, DataTable? table2,
-                              int chunkSize = DefaultChunkSize,
-                              int? degreeOfParallelism = null)
+    public static bool AreEqual(DataTable? table1, DataTable? table2, int chunkSize = DefaultChunkSize, int? degreeOfParallelism = null)
     {
         // 기본 검사 - 가장 빠른 케이스부터 확인
         if (ReferenceEquals(table1, table2)) return true;  // 동일 객체 참조
@@ -90,8 +88,7 @@ public static class DataTableCompare
     /// <summary>
     /// 청크 단위로 나누어 데이터를 병렬로 비교합니다.
     /// </summary>
-    private static bool CompareDataChunked(DataTable table1, DataTable table2,
-                                        int chunkSize, int maxThreads)
+    private static bool CompareDataChunked(DataTable table1, DataTable table2, int chunkSize, int maxThreads)
     {
         int totalRows = table1.Rows.Count;
         int totalChunks = (totalRows + chunkSize - 1) / chunkSize;  // 올림 계산
