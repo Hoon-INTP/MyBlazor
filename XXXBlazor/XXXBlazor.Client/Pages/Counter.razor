@@ -1,5 +1,8 @@
 ﻿@page "/counter"
 
+@using System.Diagnostics
+@using XXXBlazor.Client.Components.TestComp
+
 @rendermode InteractiveWebAssembly
 <PageTitle>Counter</PageTitle>
 
@@ -18,11 +21,85 @@
     <DxButton Click="IncrementCount">Click me</DxButton>
 </div>
 
-@code {
-    private int currentCount = 0;
+<div>
+    <div>
+        <Test01 Param="currentCount"></Test01>
+    </div>
+    <br>
+    <br>
+    <br>
+    <div>
+        <Test02 Param="currentCount"></Test02>
+    </div>
+</div>
 
-    private void IncrementCount()
+
+<div>
+    <DxButton Click="GenerateRandonNumber">Generate RandNum</DxButton>
+
+    @if( !isLoading && randData!=null)
+    {
+        <DxChart T="RandNum" Data="randData">
+            <DxChartLegend Visible="false"/>
+            <DxChartAnimationSettings Enabled="false"></DxChartAnimationSettings>
+            <DxChartZoomAndPanSettings ArgumentAxisZoomAndPanMode="ChartAxisZoomAndPanMode.Both" />
+
+            <DxChartLineSeries
+                Name="Test"
+                T="RandNum"
+                TArgument="int"
+                TValue="double"
+                ArgumentField="(rn => rn.idx)"
+                ValueField="(rn => rn.data)">
+            </DxChartLineSeries>
+        </DxChart>
+    }
+    else
+    {
+        <div>
+            <h6> There is no Data </h6>
+        </div>
+    }
+</div>
+
+
+@code {
+    protected int currentCount = 0;
+
+    protected bool isLoading = false;
+    IEnumerable<RandNum>? randData = null;
+
+    protected Random random = new Random();
+    protected int RandNumCount = 20000;
+
+    protected void IncrementCount()
     {
         currentCount++;
+    }
+
+    protected async Task GenerateRandonNumber()
+    {
+        Console.WriteLine("GenerateRandonNumber Start");
+        isLoading = true;
+
+        List<RandNum> temp = new();
+
+        await Task.Run(() =>
+        {
+            for(int i = 1; i < RandNumCount; i++)
+            {
+                temp.Add( new RandNum{idx=i, data=(random.NextDouble()*100) } );
+            }
+        });
+
+        randData = temp.AsEnumerable();
+
+        isLoading = false;
+    }
+
+    public class RandNum
+    {
+        public int idx { get; set; }
+        public double data { get; set; }
     }
 }

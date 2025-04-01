@@ -37,19 +37,20 @@ namespace XXXBlazor.Client.Pages
 
         // Node Data
         protected List<List<DatasetData>>? nodeData;
+        private Dictionary<string, List<List<DatasetData>>> nodeCache = new();
 
         // Display Data
         public DataTable? GridData;
         public DataTable? ChartData;
 
         // JavaScript 초기화를 OnAfterRenderAsync로 이동
-        protected override async Task OnAfterRenderAsync(bool firstRender)
-        {
-            if (firstRender)
-            {
-                await InitializeJavaScript();
-            }
-        }
+        //protected override async Task OnAfterRenderAsync(bool firstRender)
+        //{
+        //    if (firstRender)
+        //    {
+        //        await InitializeJavaScript();
+        //    }
+        //}
 
         private async Task InitializeJavaScript()
         {
@@ -175,7 +176,7 @@ namespace XXXBlazor.Client.Pages
 
                                 if (totalBytesRead % (4 * chunkSize1) == 0) // per 4 * 64KB (4chunks)
                                 {
-                                    await Task.Delay(1);
+                                    await Task.Yield();
                                 }
                             }
                         }
@@ -276,31 +277,54 @@ namespace XXXBlazor.Client.Pages
             }
         }
 
+        protected Stopwatch stopwatch = new Stopwatch();
+
         protected async Task HandleNodeClicked(Hdf5TreeNode node)
         {
+            stopwatch.Start();
+            Console.WriteLine("");
+            Console.WriteLine($"Noode Changed {selectedNode.Name}->{node.Name}");
+            Console.WriteLine($"HandleNodeClicked Start[{stopwatch.ElapsedMilliseconds}ms]");
             selectedNode = node;
 
+            Console.WriteLine($"    LoadNodeData Start [{stopwatch.ElapsedMilliseconds}ms]");
             nodeData = await LoadNodeData(node);
+            Console.WriteLine($"    LoadNodeData E n d [{stopwatch.ElapsedMilliseconds}ms]");
 
-            await Task.Run(() => GridData = ChartData = ConvertToDataTable(nodeData).Copy());
 
-            //StateHasChanged();
+            Console.WriteLine($"    ConvertToDataTable Start [{stopwatch.ElapsedMilliseconds}ms]");
+            GridData = ChartData = ConvertToDataTable(nodeData).Copy();
+            Console.WriteLine($"    ConvertToDataTable E n d [{stopwatch.ElapsedMilliseconds}ms]");
+
+            LimitCacheSize(20);
+
+            Console.WriteLine($"HandleNodeClicked E n d[{stopwatch.ElapsedMilliseconds}ms]");
+            stopwatch.Stop();
+            stopwatch.Reset();
         }
 
         private async Task<List<List<DatasetData>>> LoadNodeData(Hdf5TreeNode SelNode)
         {
+            if (nodeCache.TryGetValue(SelNode.Path, out var cachedData))
+            {
+                return cachedData;
+            }
+
             List<List<DatasetData>> NodeData = new List<List<DatasetData>>();
 
             try
             {
+                Console.WriteLine($"        Inside Start [{stopwatch.ElapsedMilliseconds}ms]");
+
                 if (SelNode != null)
                 {
                     if (SelNode.NodeType == Hdf5NodeType.Group)
                     {
-                        // 데이터셋을 리스트에 저장 후 각 데이터셋을 전부 Load
+                        Console.WriteLine($"            Group Start [{stopwatch.ElapsedMilliseconds}ms]");
                         await Task.Run(() =>
                         {
-                            foreach (var child in SelNode.Children)
+                            //foreach (var child in SelNode.Children)
+                            Parallel.ForEach(SelNode.Children, child =>
                             {
                                 var dataList = new List<DatasetData>();
 
@@ -311,6 +335,7 @@ namespace XXXBlazor.Client.Pages
                                         foreach (var val in doubleArray)
                                         {
                                             dataList.Add(new DatasetData { Name = child.Name, Data = val });
+                                            //Task.Yield();
                                         }
                                     }
                                     else if (child.Data is int[] intArray)
@@ -318,6 +343,7 @@ namespace XXXBlazor.Client.Pages
                                         foreach (var val in intArray)
                                         {
                                             dataList.Add(new DatasetData { Name = child.Name, Data = val });
+                                            //Task.Yield();
                                         }
                                     }
                                     else if (child.Data is string[] stringArray)
@@ -325,6 +351,7 @@ namespace XXXBlazor.Client.Pages
                                         foreach (var val in stringArray)
                                         {
                                             dataList.Add(new DatasetData { Name = child.Name, Data = val });
+                                            //Task.Yield();
                                         }
                                     }
                                     else
@@ -332,37 +359,52 @@ namespace XXXBlazor.Client.Pages
                                         throw new Exception("Not supported data type");
                                     }
 
-                                    NodeData.Add(dataList);
+                                    lock (NodeData)
+                                    {
+                                        NodeData.Add(dataList);
+                                    }
                                 }
-                            }
+                            });
+                            //}
                         });
+                        Console.WriteLine($"            Group E n d [{stopwatch.ElapsedMilliseconds}ms]");
                     }
                     else if (SelNode.NodeType == Hdf5NodeType.Dataset)
                     {
-                        await Task.Run(() =>
+                        Console.WriteLine($"            Dataset Start [{stopwatch.ElapsedMilliseconds}ms]");
+                        //await Task.Run(() =>
                         {
                             var dataList = new List<DatasetData>();
 
                             if(SelNode.Data is double[] doubleArray)
                             {
+                                Console.WriteLine($"                double Start [{stopwatch.ElapsedMilliseconds}ms]");
                                 foreach (var val in doubleArray)
                                 {
                                     dataList.Add(new DatasetData { Name = SelNode.Name, Data = val });
+                                    //Task.Yield();
                                 }
+                                Console.WriteLine($"                double E n d [{stopwatch.ElapsedMilliseconds}ms]");
                             }
                             else if(SelNode.Data is int[] intArray)
                             {
+                                Console.WriteLine($"                int Start [{stopwatch.ElapsedMilliseconds}ms]");
                                 foreach (var val in intArray)
                                 {
                                     dataList.Add(new DatasetData { Name = SelNode.Name, Data = val });
+                                    //Task.Yield();
                                 }
+                                Console.WriteLine($"                int E n d [{stopwatch.ElapsedMilliseconds}ms]");
                             }
                             else if(SelNode.Data is string[] stringArray)
                             {
+                                Console.WriteLine($"                string Start [{stopwatch.ElapsedMilliseconds}ms]");
                                 foreach (var val in stringArray)
                                 {
                                     dataList.Add(new DatasetData { Name = SelNode.Name, Data = val });
+                                    //Task.Yield();
                                 }
+                                Console.WriteLine($"                string E n d [{stopwatch.ElapsedMilliseconds}ms]");
                             }
                             else
                             {
@@ -370,7 +412,8 @@ namespace XXXBlazor.Client.Pages
                             }
 
                             NodeData.Add(dataList);
-                        });
+                        }//);
+                        Console.WriteLine($"            Dataset E n d [{stopwatch.ElapsedMilliseconds}ms]");
                     }
                 }
             }
@@ -380,7 +423,8 @@ namespace XXXBlazor.Client.Pages
             }
             finally
             {
-
+                nodeCache[SelNode.Path] = NodeData;
+                Console.WriteLine($"        Inside E n d [{stopwatch.ElapsedMilliseconds}ms]");
             }
 
             return NodeData;
@@ -400,33 +444,64 @@ namespace XXXBlazor.Client.Pages
 
             ColCnt = nodeData[0].Count;
 
-            List<string> ColName = new List<string>();
+            /*
+            List<string> ColNames = new List<string>();
 
             if(nodeData != null && nodeData[0] != null)
             {
                 for(int i = 0; i < RowCnt; i++)
                 {
-                    ColName.Add(nodeData[i][0].Name);
+                    ColNames.Add(nodeData[i][0].Name);
                 }
             }
 
             for(int j = 0; j < RowCnt; j++)
             {
-                dt.Columns.Add($"{ColName[j]}", typeof(DatasetData));
+                dt.Columns.Add($"{ColNames[j]}", typeof(DatasetData));
             }
+            */
+
+            string[] ColNames = new string[RowCnt];
+            for (int i = 0; i < RowCnt; i++)
+            {
+                ColNames[i] = nodeData[i][0].Name;
+                dt.Columns.Add(ColNames[i], typeof(DatasetData));
+            }
+
+            dt.BeginLoadData();
 
             for(int i = 0; i < ColCnt; i++)
             {
                 DataRow row = dt.NewRow();
                 for(int j = 0; j < RowCnt; j++)
                 {
-                    row[$"{ColName[j]}"] = nodeData[j][i];
+                    row[$"{ColNames[j]}"] = nodeData[j][i];
                 }
 
                 dt.Rows.Add(row);
             }
 
+            dt.EndLoadData();
+
             return dt;
+        }
+
+        private void ClearCache()
+        {
+            nodeCache.Clear();
+        }
+
+        private void LimitCacheSize(int maxSize = 10)
+        {
+            if (nodeCache.Count > maxSize)
+            {
+                // 가장 오래된 항목부터 제거 (FIFO)
+                var keysToRemove = nodeCache.Keys.Take(nodeCache.Count - maxSize).ToList();
+                foreach (var key in keysToRemove)
+                {
+                    nodeCache.Remove(key);
+                }
+            }
         }
 
         [JSInvokable]
@@ -475,6 +550,8 @@ namespace XXXBlazor.Client.Pages
 
                 fileModel = null;
                 selectedNode = null;
+                ClearCache();
+
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }

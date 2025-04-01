@@ -32,6 +32,7 @@ namespace XXXBlazor.Client.Pages
 
         protected override async Task OnParametersSetAsync()
         {
+            //Console.WriteLine("Chart ParamSetting");
             await _dataProcessingSemaphore.WaitAsync();
 
             try
@@ -48,7 +49,7 @@ namespace XXXBlazor.Client.Pages
                     isDataChanged = true;
                     isChartVisible = false;
 
-                    StateHasChanged();
+                    //StateHasChanged();
                     await Task.Delay(10);
 
                     await Task.Run(() =>
@@ -84,18 +85,19 @@ namespace XXXBlazor.Client.Pages
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
+            //Console.WriteLine("Chart Rendering");
             if (firstRender)
             {
                 isDoneFirstRender = true;
             }
-            Console.WriteLine("{0}{1:HH:mm:ss.fff}", "O", DateTime.Now);
+            //Console.WriteLine("{0}{1:HH:mm:ss.fff}", "O", DateTime.Now);
             await base.OnAfterRenderAsync(firstRender);
         }
 
         protected override bool ShouldRender()
         {
             bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && OldDisplayData != null);
-            Console.WriteLine("{0}{1:HH:mm:ss.fff}",needRender?"O":"X", DateTime.Now);
+            //Console.WriteLine("{0}{1:HH:mm:ss.fff}",needRender?"O":"X", DateTime.Now);
             return needRender;
         }
 

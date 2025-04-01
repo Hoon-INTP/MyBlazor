@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Components;
 using System.Data;
-using System.Diagnostics;
 
 namespace XXXBlazor.Client.Pages
 {
@@ -15,6 +14,7 @@ namespace XXXBlazor.Client.Pages
 
         protected override async Task OnParametersSetAsync()
         {
+            //Console.WriteLine("Grid ParamSetting");
             if ( !DataTableCompare.AreEqual(OldDisplayData, DisplayData) )
             {
                 needRender = true;
@@ -24,6 +24,15 @@ namespace XXXBlazor.Client.Pages
             {
                 needRender = false;
             }
+        }
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            /* if (firstRender)
+            {
+                // JavaScript 상호 운용성을 통해 스크롤 이벤트 리스너 등록
+                await JSRuntime.InvokeVoidAsync("hdf5GridInterop.registerScrollListener", DotNetObjectReference.Create(this));
+            } */
         }
 
         protected override bool ShouldRender()
