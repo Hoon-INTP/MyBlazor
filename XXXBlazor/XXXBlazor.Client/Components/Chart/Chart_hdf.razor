@@ -20,8 +20,15 @@
         ShowFooter="true"
         HeaderText="Select Series">
         <BodyContentTemplate>
-            @* 여기에 차트레전드 추가 *@
-            <h6> SERIES </h6>
+            @foreach(DataColumn col in DisplayData.Columns)
+            {
+                <DxCheckBox CheckType="CheckType.Switch"
+                    Checked="@ShowSeries[col.ColumnName]"
+                    CheckedChanged="@((bool t) => CheckedChanged(col.ColumnName, t))"
+                    Alignment="CheckBoxContentAlignment.Default">
+                    @col.ColumnName
+                </DxCheckBox>
+            }
         </BodyContentTemplate>
 
         <FooterContentTemplate>
@@ -37,15 +44,18 @@
         <DxChartZoomAndPanSettings ArgumentAxisZoomAndPanMode="ChartAxisZoomAndPanMode.Both" />
         @foreach (DataColumn col in DisplayData.Columns)
         {
-            <DxChartLineSeries
-                Visible="true"
-                T="DataRow"
-                TArgument="int"
-                TValue="object"
-                Name="@col.ColumnName"
-                ArgumentField="@(row => DisplayData.Rows.IndexOf(row) + 1)"
-                ValueField="@(row => GetDataValue(row, col))">
-            </DxChartLineSeries>
+            if(ShowSeries[col.ColumnName] == true)
+            {
+                <DxChartLineSeries
+                    Visible="true"
+                    T="DataRow"
+                    TArgument="int"
+                    TValue="object"
+                    Name="@col.ColumnName"
+                    ArgumentField="@(row => DisplayData.Rows.IndexOf(row) + 1)"
+                    ValueField="@(row => GetDataValue(row, col))">
+                </DxChartLineSeries>
+            }
         }
 
         <DxChartLegend
@@ -59,3 +69,4 @@
 }
 
 <DxButton Text="Print" Click="@PrintField"></DxButton>
+

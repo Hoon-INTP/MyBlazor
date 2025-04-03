@@ -18,7 +18,10 @@ namespace XXXBlazor.Client.Pages
         protected bool isDoneFirstRender = false;
         protected bool isChartVisible = false;
         protected bool isLengendVisible = false;
+        protected bool isSeriesChanged = false;
         protected int chartRenderKey = 0;
+
+        protected Dictionary<string, bool> ShowSeries = new Dictionary<string, bool>();
 
         protected bool isVisiblePopupSelectSeries { get; set; }
 
@@ -48,16 +51,27 @@ namespace XXXBlazor.Client.Pages
 
                 if ( _isDataChanged )
                 {
+                    ShowSeries.Clear();
                     isDataChanged = true;
                     isChartVisible = false;
 
                     //StateHasChanged();
-                    await Task.Delay(10);
+                    //await Task.Delay(10);
 
                     await Task.Run(() =>
                     {
                         DisplayData = NewData != null ? NewData.Copy() : null;
                     });
+
+
+
+                    foreach(DataColumn col in DisplayData.Columns)
+                    {
+                        ShowSeries.Add(col.ColumnName, false);
+                    }
+
+                    isSeriesChanged = true;
+
 
                     chartRenderKey++;
 
@@ -98,7 +112,7 @@ namespace XXXBlazor.Client.Pages
 
         protected override bool ShouldRender()
         {
-            bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && DisplayData != null);
+            bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && DisplayData != null) || isSeriesChanged;
             //Console.WriteLine("{0}{1:HH:mm:ss.fff}",needRender?"O":"X", DateTime.Now);
             return needRender;
         }
@@ -109,6 +123,10 @@ namespace XXXBlazor.Client.Pages
             return datasetData.Data;
         }
 
+        protected void CheckedChanged(string seriesName, bool bMode)
+        {
+            ShowSeries[seriesName] = bMode;
+        }
 
         protected async Task PrintField()
         {

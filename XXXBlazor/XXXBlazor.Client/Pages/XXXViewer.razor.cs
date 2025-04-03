@@ -6,6 +6,7 @@ using Microsoft.JSInterop;
 using DevExpress.Blazor;
 using XXXBlazor.Client.Services;
 using XXXBlazor.Client.Models;
+using DevExpress.ClipboardSource.SpreadsheetML;
 
 namespace XXXBlazor.Client.Pages
 {
@@ -109,6 +110,8 @@ namespace XXXBlazor.Client.Pages
                 errorMessage = null;
                 fileModel = null;
                 selectedNode = null;
+
+                GridData = ChartData = new DataTable().Copy();
             }
 
             await InvokeAsync(StateHasChanged);
