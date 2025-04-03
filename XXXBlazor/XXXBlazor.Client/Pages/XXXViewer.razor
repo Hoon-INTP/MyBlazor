@@ -81,22 +81,29 @@ else
             <DxStackLayoutItem Length="85%">
                 <Template>
                     <div>
-                        <DxSplitter Height="3000px" Width="100%">
-                            <Panes>
-                                <DxSplitterPane>
-                                    <DxSplitter Orientation="Orientation.Vertical">
-                                        <Panes>
-                                            <DxSplitterPane MaxSize="90%" AllowCollapse="true">
-                                                    <Grid_hdf DisplayData="@GridData"></Grid_hdf>
-                                            </DxSplitterPane>
-                                            <DxSplitterPane MaxSize="90%" AllowCollapse="true">
-                                                    <Chart_hdf DisplayData="@ChartData"></Chart_hdf>
-                                            </DxSplitterPane>
-                                        </Panes>
-                                    </DxSplitter>
-                                </DxSplitterPane>
-                            </Panes>
-                        </DxSplitter>
+                        @if( SelectedFilesCount != 0 )
+                        {
+                            <DxSplitter Height="800px" Width="100%">
+                                <Panes>
+                                    <DxSplitterPane>
+                                        <DxSplitter Orientation="Orientation.Vertical">
+                                            <Panes>
+                                                <DxSplitterPane MaxSize="90%" AllowCollapse="true">
+                                                    <div>
+                                                        <Grid_hdf DisplayData="@GridData"></Grid_hdf>
+                                                    </div>
+                                                </DxSplitterPane>
+                                                <DxSplitterPane MaxSize="90%" AllowCollapse="true">
+                                                    <div>
+                                                        <Chart_hdf NewData="@ChartData"></Chart_hdf>
+                                                    </div>
+                                                </DxSplitterPane>
+                                            </Panes>
+                                        </DxSplitter>
+                                    </DxSplitterPane>
+                                </Panes>
+                            </DxSplitter>
+                        }
                     </div>
                 </Template>
             </DxStackLayoutItem>

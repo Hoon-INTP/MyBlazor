@@ -29,7 +29,7 @@ namespace XXXBlazor.Client.Pages
         private int initializationAttempts = 0;
         private const int MAX_INITIALIZATION_ATTEMPTS = 3;
 
-        int SelectedFilesCount { get; set; }
+        protected int SelectedFilesCount { get; set; }
 
         // File Data
         protected Hdf5TreeNode? fileModel;
@@ -283,7 +283,7 @@ namespace XXXBlazor.Client.Pages
         {
             stopwatch.Start();
             Console.WriteLine("");
-            Console.WriteLine($"Noode Changed {selectedNode.Name}->{node.Name}");
+            Console.WriteLine($"Noode Changed [{selectedNode.Name}]->[{node.Name}]");
             Console.WriteLine($"HandleNodeClicked Start[{stopwatch.ElapsedMilliseconds}ms]");
             selectedNode = node;
 
@@ -307,6 +307,7 @@ namespace XXXBlazor.Client.Pages
         {
             if (nodeCache.TryGetValue(SelNode.Path, out var cachedData))
             {
+                Console.WriteLine("캐시 로드 됨");
                 return cachedData;
             }
 

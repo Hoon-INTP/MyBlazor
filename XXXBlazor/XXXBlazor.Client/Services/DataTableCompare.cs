@@ -149,18 +149,25 @@ public static class DataTableCompare
     /// </summary>
     private static bool CompareChunk(DataTable table1, DataTable table2, int startRow, int endRow)
     {
-        // 각 스레드가 자체 SHA256 인스턴스를 가짐
-        using (SHA256 sha = SHA256.Create())
-        {
-            // 행의 범위를 순회하며 비교
-            for (int i = startRow; i < endRow; i++)
-            {
-                // 행 해시 계산 및 비교
-                string hash1 = ComputeRowHash(table1.Rows[i], sha);
-                string hash2 = ComputeRowHash(table2.Rows[i], sha);
+        int columnCount = table1.Columns.Count;
 
-                // 해시가 다르면 데이터가 다름
-                if (hash1 != hash2)
+        for (int i = startRow; i < endRow; i++)
+        {
+            DataRow row1 = table1.Rows[i];
+            DataRow row2 = table2.Rows[i];
+
+            for (int j = 0; j < columnCount; j++)
+            {
+                object value1 = row1[j];
+                object value2 = row2[j];
+
+                if (Convert.IsDBNull(value1) && Convert.IsDBNull(value2))
+                    continue;
+
+                if (Convert.IsDBNull(value1) || Convert.IsDBNull(value2))
+                    return false;
+
+                if (!object.Equals(value1, value2))
                 {
                     return false;
                 }

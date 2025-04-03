@@ -4,12 +4,38 @@
 
 @inherits Hdf5ChartBase
 
-@if ( null != OldDisplayData )
+
+
+    <div style="height: 40px;">
+        <DxButton
+            Text="Select Series"
+            Click="@(() => isVisiblePopupSelectSeries = true)"
+            Visible="(DisplayData != null && DisplayData.Rows.Count > 0)">
+
+        </DxButton>
+    </div>
+
+    <DxPopup
+        @bind-Visible="@isVisiblePopupSelectSeries"
+        ShowFooter="true"
+        HeaderText="Select Series">
+        <BodyContentTemplate>
+            @* 여기에 차트레전드 추가 *@
+            <h6> SERIES </h6>
+        </BodyContentTemplate>
+
+        <FooterContentTemplate>
+            <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" Click="@(() => isVisiblePopupSelectSeries = false)" />
+            <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Secondary" Text="Cancel" Click="@(() => isVisiblePopupSelectSeries = false)" />
+        </FooterContentTemplate>
+    </DxPopup>
+
+@if ( null != DisplayData )
 {
-    <DxChart @key="chartRenderKey" ref="@hdfChart" T="DataRow" Data="@OldDisplayData.AsEnumerable()">
+    <DxChart @key="chartRenderKey" ref="@hdfChart" T="DataRow" Data="@DisplayData.AsEnumerable()">
         <DxChartAnimationSettings Enabled="false"></DxChartAnimationSettings>
         <DxChartZoomAndPanSettings ArgumentAxisZoomAndPanMode="ChartAxisZoomAndPanMode.Both" />
-        @foreach (DataColumn col in OldDisplayData.Columns)
+        @foreach (DataColumn col in DisplayData.Columns)
         {
             <DxChartLineSeries
                 Visible="true"
@@ -17,7 +43,7 @@
                 TArgument="int"
                 TValue="object"
                 Name="@col.ColumnName"
-                ArgumentField="@(row => OldDisplayData.Rows.IndexOf(row) + 1)"
+                ArgumentField="@(row => DisplayData.Rows.IndexOf(row) + 1)"
                 ValueField="@(row => GetDataValue(row, col))">
             </DxChartLineSeries>
         }

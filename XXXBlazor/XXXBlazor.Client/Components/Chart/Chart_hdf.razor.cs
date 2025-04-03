@@ -11,8 +11,8 @@ namespace XXXBlazor.Client.Pages
         protected DxChartBase hdfChart;
 
         [Parameter]
-        public DataTable? DisplayData { get; set; }
-        protected DataTable? OldDisplayData;
+        public DataTable? NewData { get; set; }
+        protected DataTable? DisplayData;
 
         protected bool isDataChanged = false;
         protected bool isDoneFirstRender = false;
@@ -20,13 +20,15 @@ namespace XXXBlazor.Client.Pages
         protected bool isLengendVisible = false;
         protected int chartRenderKey = 0;
 
+        protected bool isVisiblePopupSelectSeries { get; set; }
+
         //필수?
         private SemaphoreSlim _dataProcessingSemaphore = new SemaphoreSlim(1, 1);
 
         protected override async Task OnInitializedAsync()
         {
             // 초기 상태 설정
-            isChartVisible = (OldDisplayData != null);
+            isChartVisible = (DisplayData != null);
             await base.OnInitializedAsync();
         }
 
@@ -41,7 +43,7 @@ namespace XXXBlazor.Client.Pages
 
                 await Task.Run(() =>
                 {
-                    _isDataChanged = !DataTableCompare.AreEqual(OldDisplayData, DisplayData);
+                    _isDataChanged = !DataTableCompare.AreEqual(DisplayData, NewData);
                 });
 
                 if ( _isDataChanged )
@@ -54,7 +56,7 @@ namespace XXXBlazor.Client.Pages
 
                     await Task.Run(() =>
                     {
-                        OldDisplayData = DisplayData != null ? DisplayData.Copy() : null;
+                        DisplayData = NewData != null ? NewData.Copy() : null;
                     });
 
                     chartRenderKey++;
@@ -65,7 +67,7 @@ namespace XXXBlazor.Client.Pages
                 {
                     isDataChanged = false;
 
-                    if (!isChartVisible && OldDisplayData != null)
+                    if (!isChartVisible && DisplayData != null)
                     {
                         isChartVisible = true;
                         StateHasChanged();
@@ -96,7 +98,7 @@ namespace XXXBlazor.Client.Pages
 
         protected override bool ShouldRender()
         {
-            bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && OldDisplayData != null);
+            bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && DisplayData != null);
             //Console.WriteLine("{0}{1:HH:mm:ss.fff}",needRender?"O":"X", DateTime.Now);
             return needRender;
         }
@@ -112,5 +114,6 @@ namespace XXXBlazor.Client.Pages
         {
             //await Task.Run(hdfChart.RefreshData);
         }
+
     }
 }
