@@ -1,0 +1,28 @@
+
+@using XXXBlazor.Client.Models
+@using DevExpress.Blazor
+@using System.Data
+
+@inherits Hdf5LegendBase
+
+<DxPopup
+    @bind-Visible="@isVisiblePopupSelectSeries"
+    ShowFooter="true"
+    HeaderText="Select Series">
+    <BodyContentTemplate>
+        @foreach(DataColumn col in DisplayData.Columns)
+        {
+            <DxCheckBox CheckType="CheckType.Switch"
+                Checked="@ShowSeries[col.ColumnName]"
+                CheckedChanged="@((bool t) => CheckedChanged(col.ColumnName, t))"
+                Alignment="CheckBoxContentAlignment.Default">
+                @col.ColumnName
+            </DxCheckBox>
+        }
+    </BodyContentTemplate>
+
+    <FooterContentTemplate>
+        <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" Click="@OnOK" />
+        <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Secondary" Text="Cancel" Click="@OnClose" />
+    </FooterContentTemplate>
+</DxPopup>

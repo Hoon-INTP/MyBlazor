@@ -6,7 +6,6 @@ using Microsoft.JSInterop;
 using DevExpress.Blazor;
 using XXXBlazor.Client.Services;
 using XXXBlazor.Client.Models;
-using DevExpress.ClipboardSource.SpreadsheetML;
 
 namespace XXXBlazor.Client.Pages
 {
@@ -38,13 +37,12 @@ namespace XXXBlazor.Client.Pages
 
         // Node Data
         protected List<List<DatasetData>>? nodeData;
-        private Dictionary<string, List<List<DatasetData>>> nodeCache = new();
+        private XXXCache<string, List<List<DatasetData>>> nodeCache = new(20);
 
         // Display Data
         public DataTable? GridData;
         public DataTable? ChartData;
 
-        // JavaScript 초기화를 OnAfterRenderAsync로 이동
         //protected override async Task OnAfterRenderAsync(bool firstRender)
         //{
         //    if (firstRender)
@@ -61,12 +59,10 @@ namespace XXXBlazor.Client.Pages
             try
             {
                 initializationAttempts++;
-                //Console.WriteLine($"JavaScript 초기화 시도 {initializationAttempts}/{MAX_INITIALIZATION_ATTEMPTS}...");
 
                 dotNetObjectRef = DotNetObjectReference.Create((XXXViewer)this);
                 await JSRuntime.InvokeVoidAsync("initializeWorkers", dotNetObjectRef);
 
-                // 초기화 확인
                 var jsInlineCheck = await JSRuntime.InvokeAsync<bool>("window.hasOwnProperty", "processChunk");
                 if (!jsInlineCheck)
                 {
@@ -75,16 +71,13 @@ namespace XXXBlazor.Client.Pages
 
                 isJsInitialized = true;
                 errorMessage = null;
-                //Console.WriteLine("JavaScript 초기화 성공!");
             }
             catch (Exception ex)
             {
                 errorMessage = $"JavaScript 초기화 오류 ({initializationAttempts}/{MAX_INITIALIZATION_ATTEMPTS}): {ex.Message}";
-                //Console.WriteLine($"JavaScript 초기화 오류: {ex}");
 
                 if (initializationAttempts < MAX_INITIALIZATION_ATTEMPTS)
                 {
-                    // 잠시 후 재시도
                     await Task.Delay(1000);
                     await InitializeJavaScript();
                 }
@@ -119,7 +112,6 @@ namespace XXXBlazor.Client.Pages
 
         protected async Task OnFilesUploading(FilesUploadingEventArgs args)
         {
-            //Console.WriteLine("File Upload Start");
             try
             {
                 /* // JS가 초기화되지 않았다면 작업 중단
@@ -159,15 +151,13 @@ namespace XXXBlazor.Client.Pages
 
                 var stopwatch = Stopwatch.StartNew();
 
-                // 파일 전체를 메모리 스트림에 복사
                 using (var memoryStream = new MemoryStream())
                 {
                     using (var fileStream = file.OpenReadStream(maxAllowedSize: 500 * 1024 * 1024))
                     {
-                        if(file.Size > 5 * 1024 * 1024) //1MB
+                        if(file.Size > 5 * 1024 * 1024)
                         {
-                            //Console.WriteLine("over 5MB");
-                            int chunkSize1 = 64 * 1024; //64KB
+                            int chunkSize1 = 64 * 1024;
                             byte[] buffer = new byte[chunkSize1];
                             int bytesRead;
                             long totalBytesRead = 0;
@@ -177,7 +167,7 @@ namespace XXXBlazor.Client.Pages
                                 await memoryStream.WriteAsync(buffer, 0, bytesRead);
                                 totalBytesRead += bytesRead;
 
-                                if (totalBytesRead % (4 * chunkSize1) == 0) // per 4 * 64KB (4chunks)
+                                if (totalBytesRead % (4 * chunkSize1) == 0)
                                 {
                                     await Task.Yield();
                                 }
@@ -284,33 +274,19 @@ namespace XXXBlazor.Client.Pages
 
         protected async Task HandleNodeClicked(Hdf5TreeNode node)
         {
-            stopwatch.Start();
-            Console.WriteLine("");
-            Console.WriteLine($"Noode Changed [{selectedNode.Name}]->[{node.Name}]");
-            Console.WriteLine($"HandleNodeClicked Start[{stopwatch.ElapsedMilliseconds}ms]");
             selectedNode = node;
 
-            Console.WriteLine($"    LoadNodeData Start [{stopwatch.ElapsedMilliseconds}ms]");
             nodeData = await LoadNodeData(node);
-            Console.WriteLine($"    LoadNodeData E n d [{stopwatch.ElapsedMilliseconds}ms]");
 
-
-            Console.WriteLine($"    ConvertToDataTable Start [{stopwatch.ElapsedMilliseconds}ms]");
             GridData = ChartData = ConvertToDataTable(nodeData).Copy();
-            Console.WriteLine($"    ConvertToDataTable E n d [{stopwatch.ElapsedMilliseconds}ms]");
 
-            LimitCacheSize(20);
-
-            Console.WriteLine($"HandleNodeClicked E n d[{stopwatch.ElapsedMilliseconds}ms]");
-            stopwatch.Stop();
-            stopwatch.Reset();
         }
 
         private async Task<List<List<DatasetData>>> LoadNodeData(Hdf5TreeNode SelNode)
         {
-            if (nodeCache.TryGetValue(SelNode.Path, out var cachedData))
+            if (nodeCache.TryGet(SelNode.Path, out var cachedData))
             {
-                Console.WriteLine("캐시 로드 됨");
+                //Console.WriteLine("캐시 로드 됨");
                 return cachedData;
             }
 
@@ -318,16 +294,12 @@ namespace XXXBlazor.Client.Pages
 
             try
             {
-                Console.WriteLine($"        Inside Start [{stopwatch.ElapsedMilliseconds}ms]");
-
                 if (SelNode != null)
                 {
                     if (SelNode.NodeType == Hdf5NodeType.Group)
                     {
-                        Console.WriteLine($"            Group Start [{stopwatch.ElapsedMilliseconds}ms]");
                         await Task.Run(() =>
                         {
-                            //foreach (var child in SelNode.Children)
                             Parallel.ForEach(SelNode.Children, child =>
                             {
                                 var dataList = new List<DatasetData>();
@@ -339,7 +311,6 @@ namespace XXXBlazor.Client.Pages
                                         foreach (var val in doubleArray)
                                         {
                                             dataList.Add(new DatasetData { Name = child.Name, Data = val });
-                                            //Task.Yield();
                                         }
                                     }
                                     else if (child.Data is int[] intArray)
@@ -347,7 +318,6 @@ namespace XXXBlazor.Client.Pages
                                         foreach (var val in intArray)
                                         {
                                             dataList.Add(new DatasetData { Name = child.Name, Data = val });
-                                            //Task.Yield();
                                         }
                                     }
                                     else if (child.Data is string[] stringArray)
@@ -355,7 +325,6 @@ namespace XXXBlazor.Client.Pages
                                         foreach (var val in stringArray)
                                         {
                                             dataList.Add(new DatasetData { Name = child.Name, Data = val });
-                                            //Task.Yield();
                                         }
                                     }
                                     else
@@ -369,46 +338,33 @@ namespace XXXBlazor.Client.Pages
                                     }
                                 }
                             });
-                            //}
                         });
-                        Console.WriteLine($"            Group E n d [{stopwatch.ElapsedMilliseconds}ms]");
                     }
                     else if (SelNode.NodeType == Hdf5NodeType.Dataset)
                     {
-                        Console.WriteLine($"            Dataset Start [{stopwatch.ElapsedMilliseconds}ms]");
-                        //await Task.Run(() =>
                         {
                             var dataList = new List<DatasetData>();
 
                             if(SelNode.Data is double[] doubleArray)
                             {
-                                Console.WriteLine($"                double Start [{stopwatch.ElapsedMilliseconds}ms]");
                                 foreach (var val in doubleArray)
                                 {
                                     dataList.Add(new DatasetData { Name = SelNode.Name, Data = val });
-                                    //Task.Yield();
                                 }
-                                Console.WriteLine($"                double E n d [{stopwatch.ElapsedMilliseconds}ms]");
                             }
                             else if(SelNode.Data is int[] intArray)
                             {
-                                Console.WriteLine($"                int Start [{stopwatch.ElapsedMilliseconds}ms]");
                                 foreach (var val in intArray)
                                 {
                                     dataList.Add(new DatasetData { Name = SelNode.Name, Data = val });
-                                    //Task.Yield();
                                 }
-                                Console.WriteLine($"                int E n d [{stopwatch.ElapsedMilliseconds}ms]");
                             }
                             else if(SelNode.Data is string[] stringArray)
                             {
-                                Console.WriteLine($"                string Start [{stopwatch.ElapsedMilliseconds}ms]");
                                 foreach (var val in stringArray)
                                 {
                                     dataList.Add(new DatasetData { Name = SelNode.Name, Data = val });
-                                    //Task.Yield();
                                 }
-                                Console.WriteLine($"                string E n d [{stopwatch.ElapsedMilliseconds}ms]");
                             }
                             else
                             {
@@ -416,8 +372,7 @@ namespace XXXBlazor.Client.Pages
                             }
 
                             NodeData.Add(dataList);
-                        }//);
-                        Console.WriteLine($"            Dataset E n d [{stopwatch.ElapsedMilliseconds}ms]");
+                        }
                     }
                 }
             }
@@ -427,8 +382,7 @@ namespace XXXBlazor.Client.Pages
             }
             finally
             {
-                nodeCache[SelNode.Path] = NodeData;
-                Console.WriteLine($"        Inside E n d [{stopwatch.ElapsedMilliseconds}ms]");
+                nodeCache.Set(SelNode.Path, NodeData);
             }
 
             return NodeData;
@@ -447,23 +401,6 @@ namespace XXXBlazor.Client.Pages
             if ( 0 == nodeData[0].Count ) return dt;
 
             ColCnt = nodeData[0].Count;
-
-            /*
-            List<string> ColNames = new List<string>();
-
-            if(nodeData != null && nodeData[0] != null)
-            {
-                for(int i = 0; i < RowCnt; i++)
-                {
-                    ColNames.Add(nodeData[i][0].Name);
-                }
-            }
-
-            for(int j = 0; j < RowCnt; j++)
-            {
-                dt.Columns.Add($"{ColNames[j]}", typeof(DatasetData));
-            }
-            */
 
             string[] ColNames = new string[RowCnt];
             for (int i = 0; i < RowCnt; i++)
@@ -495,19 +432,6 @@ namespace XXXBlazor.Client.Pages
             nodeCache.Clear();
         }
 
-        private void LimitCacheSize(int maxSize = 10)
-        {
-            if (nodeCache.Count > maxSize)
-            {
-                // 가장 오래된 항목부터 제거 (FIFO)
-                var keysToRemove = nodeCache.Keys.Take(nodeCache.Count - maxSize).ToList();
-                foreach (var key in keysToRemove)
-                {
-                    nodeCache.Remove(key);
-                }
-            }
-        }
-
         [JSInvokable]
         public void OnChunkProcessed(int chunkIndex, byte[] _processedData)
         {
@@ -515,7 +439,7 @@ namespace XXXBlazor.Client.Pages
             {
                 processedData[chunkIndex] = _processedData;
                 processedChunks++;
-                // UI 업데이트 줄이기 (10개 청크마다 업데이트)
+
                 if (processedChunks % 10 == 0 || processedChunks == totalChunks)
                 {
                     InvokeAsync(StateHasChanged);
@@ -548,7 +472,6 @@ namespace XXXBlazor.Client.Pages
             {
                 if (isJsInitialized && dotNetObjectRef != null)
                 {
-                    // 워커 정리 시도
                     JSRuntime.InvokeVoidAsync("disposeWorkers");
                 }
 
@@ -561,7 +484,7 @@ namespace XXXBlazor.Client.Pages
             }
             catch
             {
-                // 정리 중 오류 무시
+
             }
             finally
             {

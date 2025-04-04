@@ -8,8 +8,6 @@ namespace XXXBlazor.Client.Pages
 {
     public class Hdf5ChartBase : ComponentBase
     {
-        protected DxChartBase hdfChart;
-
         [Parameter]
         public DataTable? NewData { get; set; }
         protected DataTable? DisplayData;
@@ -30,24 +28,19 @@ namespace XXXBlazor.Client.Pages
 
         protected override async Task OnInitializedAsync()
         {
-            // 초기 상태 설정
             isChartVisible = (DisplayData != null);
             await base.OnInitializedAsync();
         }
 
         protected override async Task OnParametersSetAsync()
         {
-            //Console.WriteLine("Chart ParamSetting");
             await _dataProcessingSemaphore.WaitAsync();
 
             try
             {
                 bool _isDataChanged = false;
 
-                await Task.Run(() =>
-                {
-                    _isDataChanged = !DataTableCompare.AreEqual(DisplayData, NewData);
-                });
+                _isDataChanged = !DataTableCompare.AreEqual(DisplayData, NewData);
 
                 if ( _isDataChanged )
                 {
@@ -55,13 +48,8 @@ namespace XXXBlazor.Client.Pages
                     isDataChanged = true;
                     isChartVisible = false;
 
-                    //StateHasChanged();
-                    //await Task.Delay(10);
 
-                    await Task.Run(() =>
-                    {
-                        DisplayData = NewData != null ? NewData.Copy() : null;
-                    });
+                    DisplayData = NewData != null ? NewData.Copy() : null;
 
 
 
@@ -101,19 +89,16 @@ namespace XXXBlazor.Client.Pages
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-            //Console.WriteLine("Chart Rendering");
             if (firstRender)
             {
                 isDoneFirstRender = true;
             }
-            //Console.WriteLine("{0}{1:HH:mm:ss.fff}", "O", DateTime.Now);
             await base.OnAfterRenderAsync(firstRender);
         }
 
         protected override bool ShouldRender()
         {
             bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && DisplayData != null) || isSeriesChanged;
-            //Console.WriteLine("{0}{1:HH:mm:ss.fff}",needRender?"O":"X", DateTime.Now);
             return needRender;
         }
 
@@ -126,11 +111,6 @@ namespace XXXBlazor.Client.Pages
         protected void CheckedChanged(string seriesName, bool bMode)
         {
             ShowSeries[seriesName] = bMode;
-        }
-
-        protected async Task PrintField()
-        {
-            //await Task.Run(hdfChart.RefreshData);
         }
 
     }

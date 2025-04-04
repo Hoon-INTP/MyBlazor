@@ -12,9 +12,8 @@ namespace XXXBlazor.Client.Pages
         protected bool needRender = false;
         protected bool IsDataLoading => needRender;
 
-        protected override async Task OnParametersSetAsync()
+        protected override void OnParametersSet()
         {
-            //Console.WriteLine("Grid ParamSetting");
             if ( !DataTableCompare.AreEqual(OldDisplayData, DisplayData) )
             {
                 needRender = true;
@@ -24,11 +23,6 @@ namespace XXXBlazor.Client.Pages
             {
                 needRender = false;
             }
-        }
-
-        protected override async Task OnAfterRenderAsync(bool firstRender)
-        {
-
         }
 
         protected override bool ShouldRender()

@@ -3,30 +3,38 @@
 
 @inherits Hdf5TreeBase
 
-<div>
-    @if( null == selectedNode )
+<style>
+    .tree-size
     {
-        <div>
-            Select File..
-        </div>
+        height: 600px;
     }
-    else
-    {
-        <DxTreeView
-            Data="@nodesList"
-            SizeMode="SizeMode.Small"
-            AllowSelectNodes="true"
-            SelectionChanged="OnNodeSelected"
-            ShowFilterPanel="true"
-            FilterMinLength="2"
-            FilterMode="NavigationFilterMode.EntireBranch">
+</style>
 
-            <DataMappings>
-                <DxTreeViewDataMapping
-                    Text="Name"
-                    Children="Children"
-                    Name="Path"/>
-            </DataMappings>
-        </DxTreeView>
-    }
-</div>
+@if( null == selectedFile )
+{
+    <div>
+        Select File..
+    </div>
+}
+else
+{
+    <DxTreeView
+        Data="@nodesList"
+        SizeMode="SizeMode.Small"
+        AllowSelectNodes="true"
+        CheckMode="TreeViewCheckMode.Disabled"
+        SelectionChanged="OnNodeSelected"
+        ShowFilterPanel="true"
+        FilterMinLength="2"
+        FilterMode="NavigationFilterMode.EntireBranch"
+        CssClass="tree-size">
+
+        <DataMappings>
+            <DxTreeViewDataMapping
+                Text="Name"
+                Children="Children"
+                Name="Path"/>
+        </DataMappings>
+    </DxTreeView>
+}
+

@@ -7,12 +7,19 @@
 
 @if(null != DisplayData)
 {
-    <DxGrid data="@DisplayData" CssClass="grid-size" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false">
-        <Columns>
-            @foreach (DataColumn col in DisplayData.Columns)
-            {
-                <DxGridDataColumn FieldName='@($"{col.ColumnName}.Data")' Caption='@($"{col.ColumnName}")' ></DxGridDataColumn>
-            }
-        </Columns>
-    </DxGrid>
+    <div>
+        <DxGrid data="@DisplayData"  SizeMode="SizeMode.Small" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false" CssClass="grid-size">
+            <Columns>
+                @foreach (DataColumn col in DisplayData.Columns)
+                {
+                    <DxGridDataColumn FieldName='@($"{col.ColumnName}.Data")' Caption='@($"{col.ColumnName}")' ></DxGridDataColumn>
+                }
+            </Columns>
+            <EmptyDataAreaTemplate>
+                <div style="text-align: center; padding: 10px; font-size: 16px; color: #888; font-family: inherit;">
+                    Choose Dataset on the TreeView
+                </div>
+            </EmptyDataAreaTemplate>
+        </DxGrid>
+    </div>
 }
