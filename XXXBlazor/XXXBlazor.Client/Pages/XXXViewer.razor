@@ -2,6 +2,7 @@
 @rendermode InteractiveWebAssembly
 @using XXXBlazor.Client.Components.Grid
 @using XXXBlazor.Client.Components.Chart
+@using XXXBlazor.Client.Components.Legends
 @using XXXBlazor.Client.Components.Tree
 @using XXXBlazor.Client.Components.Attribute
 
@@ -83,23 +84,20 @@ else
                     <div>
                         @if( SelectedFilesCount != 0 )
                         {
-                            <DxSplitter Height="800px" Width="100%">
+                            <DxSplitter Height="800px" Orientation="Orientation.Vertical">
                                 <Panes>
-                                    <DxSplitterPane>
-                                        <DxSplitter Orientation="Orientation.Vertical">
-                                            <Panes>
-                                                <DxSplitterPane MaxSize="90%" AllowCollapse="true">
-                                                    <div>
-                                                        <Grid_hdf DisplayData="@GridData"></Grid_hdf>
-                                                    </div>
-                                                </DxSplitterPane>
-                                                <DxSplitterPane MaxSize="90%" AllowCollapse="true">
-                                                    <div>
-                                                        <Chart_hdf NewData="@ChartData"></Chart_hdf>
-                                                    </div>
-                                                </DxSplitterPane>
-                                            </Panes>
-                                        </DxSplitter>
+                                    <DxSplitterPane Size="60px" AllowResize="false" AllowCollapse="false">
+                                        <Legend_hdf NewData="LegendData" ShowSeries="SeriesSettings" ShowSeriesChanged="OnSeriesSettingsChanged"></Legend_hdf>
+                                    </DxSplitterPane>
+                                    <DxSplitterPane MaxSize="90%" AllowCollapse="true">
+                                        <div>
+                                            <Grid_hdf DisplayData="@GridData"></Grid_hdf>
+                                        </div>
+                                    </DxSplitterPane>
+                                    <DxSplitterPane MaxSize="90%" AllowCollapse="true">
+                                        <div>
+                                            <Chart_hdf NewData="@ChartData"></Chart_hdf>
+                                        </div>
                                     </DxSplitterPane>
                                 </Panes>
                             </DxSplitter>

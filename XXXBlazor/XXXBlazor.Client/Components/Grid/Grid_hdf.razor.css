@@ -1,4 +1,5 @@
 ::deep .grid-size
 {
-    max-height: 700px;
+    max-height: 640px;
+    max-width: 100%;
 }

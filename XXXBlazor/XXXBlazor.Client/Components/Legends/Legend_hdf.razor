@@ -5,6 +5,14 @@
 
 @inherits Hdf5LegendBase
 
+<div style="height: 40px;">
+    <DxButton
+        Text="Select Series"
+        Click="@(() => OpenSelectSeriesPopup())"
+        Visible="(DisplayData != null && DisplayData.Rows.Count > 0)">
+    </DxButton>
+</div>
+
 <DxPopup
     @bind-Visible="@isVisiblePopupSelectSeries"
     ShowFooter="true"
@@ -13,7 +21,7 @@
         @foreach(DataColumn col in DisplayData.Columns)
         {
             <DxCheckBox CheckType="CheckType.Switch"
-                Checked="@ShowSeries[col.ColumnName]"
+                Checked="@(TempSelection.ContainsKey(col.ColumnName) ? TempSelection[col.ColumnName] : false)"
                 CheckedChanged="@((bool t) => CheckedChanged(col.ColumnName, t))"
                 Alignment="CheckBoxContentAlignment.Default">
                 @col.ColumnName

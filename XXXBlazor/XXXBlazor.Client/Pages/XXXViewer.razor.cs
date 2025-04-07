@@ -42,6 +42,10 @@ namespace XXXBlazor.Client.Pages
         // Display Data
         public DataTable? GridData;
         public DataTable? ChartData;
+        public DataTable? LegendData;
+
+        // Legend Data
+        public Dictionary<string, bool> SeriesSettings { get; set; }
 
         //protected override async Task OnAfterRenderAsync(bool firstRender)
         //{
@@ -104,7 +108,7 @@ namespace XXXBlazor.Client.Pages
                 fileModel = null;
                 selectedNode = null;
 
-                GridData = ChartData = new DataTable().Copy();
+                LegendData = GridData = ChartData = new DataTable().Copy();
             }
 
             await InvokeAsync(StateHasChanged);
@@ -280,6 +284,7 @@ namespace XXXBlazor.Client.Pages
 
             GridData = ChartData = ConvertToDataTable(nodeData).Copy();
 
+            LegendData = GridData.Copy();
         }
 
         private async Task<List<List<DatasetData>>> LoadNodeData(Hdf5TreeNode SelNode)
@@ -430,6 +435,15 @@ namespace XXXBlazor.Client.Pages
         private void ClearCache()
         {
             nodeCache.Clear();
+        }
+
+        protected void OnSeriesSettingsChanged(Dictionary<string, bool> updatedVSettings)
+        {
+            SeriesSettings.Clear();
+            foreach (var kvp in updatedVSettings)
+            {
+                SeriesSettings.Add(kvp.Key, kvp.Value);
+            }
         }
 
         [JSInvokable]
