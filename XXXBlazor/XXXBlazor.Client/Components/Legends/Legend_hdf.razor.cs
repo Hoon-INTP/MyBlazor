@@ -69,6 +69,16 @@ namespace XXXBlazor.Client.Pages
 
         protected async Task OnOK()
         {
+            bool IsAllFalse = TempSelection.Values.All(v => v == false);
+
+            if ( IsAllFalse )
+            {
+                if ( ShowSeriesList.Any() )
+                {
+                    TempSelection[ShowSeriesList[0]] = true;
+                }
+            }
+
             OldShowSeries = new Dictionary<string, bool>(TempSelection);
 
             await ShowSeriesChanged.InvokeAsync(TempSelection);

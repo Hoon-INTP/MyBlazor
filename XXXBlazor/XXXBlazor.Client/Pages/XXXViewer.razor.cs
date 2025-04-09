@@ -286,7 +286,7 @@ namespace XXXBlazor.Client.Pages
 
             GridData = ChartData = ConvertToDataTable(nodeData).Copy();
 
-            LegendData = LoadLegendList(GridData);
+            LegendData = new List<string>(LoadLegendList(GridData));
         }
 
         private async Task<List<List<DatasetData>>> LoadNodeData(Hdf5TreeNode SelNode)
