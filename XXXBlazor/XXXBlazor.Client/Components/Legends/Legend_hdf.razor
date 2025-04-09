@@ -9,28 +9,31 @@
     <DxButton
         Text="Select Series"
         Click="@(() => OpenSelectSeriesPopup())"
-        Visible="(DisplayData != null && DisplayData.Rows.Count > 0)">
+        Visible="(ShowSeriesList != null)">
     </DxButton>
 </div>
 
-<DxPopup
-    @bind-Visible="@isVisiblePopupSelectSeries"
-    ShowFooter="true"
-    HeaderText="Select Series">
-    <BodyContentTemplate>
-        @foreach(DataColumn col in DisplayData.Columns)
-        {
-            <DxCheckBox CheckType="CheckType.Switch"
-                Checked="@(TempSelection.ContainsKey(col.ColumnName) ? TempSelection[col.ColumnName] : false)"
-                CheckedChanged="@((bool t) => CheckedChanged(col.ColumnName, t))"
-                Alignment="CheckBoxContentAlignment.Default">
-                @col.ColumnName
-            </DxCheckBox>
-        }
-    </BodyContentTemplate>
+@if(null != ShowSeriesList)
+{
+    <DxPopup
+        @bind-Visible="@isVisiblePopupSelectSeries"
+        ShowFooter="true"
+        HeaderText="Select Series">
+        <BodyContentTemplate>
+            @foreach(string item in ShowSeriesList)
+            {
+                <DxCheckBox CheckType="CheckType.Switch"
+                    Checked="@(TempSelection.ContainsKey(item) ? TempSelection[item] : false)"
+                    CheckedChanged="@((bool t) => CheckedChanged(item, t))"
+                    Alignment="CheckBoxContentAlignment.Default">
+                    @item
+                </DxCheckBox>
+            }
+        </BodyContentTemplate>
 
-    <FooterContentTemplate>
-        <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" Click="@OnOK" />
-        <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Secondary" Text="Cancel" Click="@OnClose" />
-    </FooterContentTemplate>
-</DxPopup>
+        <FooterContentTemplate>
+            <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" Click="@OnOK" />
+            <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Secondary" Text="Cancel" Click="@OnClose" />
+        </FooterContentTemplate>
+    </DxPopup>
+}

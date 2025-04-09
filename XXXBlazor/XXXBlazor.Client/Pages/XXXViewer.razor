@@ -87,16 +87,24 @@ else
                             <DxSplitter Height="800px" Orientation="Orientation.Vertical">
                                 <Panes>
                                     <DxSplitterPane Size="60px" AllowResize="false" AllowCollapse="false">
-                                        <Legend_hdf NewData="LegendData" ShowSeries="SeriesSettings" ShowSeriesChanged="OnSeriesSettingsChanged"></Legend_hdf>
-                                    </DxSplitterPane>
-                                    <DxSplitterPane MaxSize="90%" AllowCollapse="true">
                                         <div>
-                                            <Grid_hdf DisplayData="@GridData"></Grid_hdf>
+                                            <Legend_hdf NewSeriesList="LegendData" ShowSeriesChanged="OnSeriesSettingsChanged"></Legend_hdf>
                                         </div>
                                     </DxSplitterPane>
                                     <DxSplitterPane MaxSize="90%" AllowCollapse="true">
                                         <div>
-                                            <Chart_hdf NewData="@ChartData"></Chart_hdf>
+                                            @if(SelectedLegendCount > 0)
+                                            {
+                                                <Grid_hdf NewData="@GridData" NewLegendSetting="GridSeriesSettings"></Grid_hdf>
+                                            }
+                                        </div>
+                                    </DxSplitterPane>
+                                    <DxSplitterPane MaxSize="90%" AllowCollapse="true">
+                                        <div>
+                                            @if(SelectedLegendCount > 0)
+                                            {
+                                                <Chart_hdf NewData="@ChartData" NewLegendSetting="ChartSeriesSettings"></Chart_hdf>
+                                            }
                                         </div>
                                     </DxSplitterPane>
                                 </Panes>
@@ -108,7 +116,7 @@ else
         </Items>
     </DxStackLayout>
 }
-
+@*
 @if (isLoading)
 {
     <div>
@@ -126,3 +134,4 @@ else if (processedChunks > 0)
 {
 
 }
+ *@

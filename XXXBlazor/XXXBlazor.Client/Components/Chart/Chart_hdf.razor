@@ -4,7 +4,7 @@
 
 @inherits Hdf5ChartBase
 
-<div style="height: 40px;">
+@* <div style="height: 40px;">
     <DxButton
         Text="Select Series"
         Click="@(() => isVisiblePopupSelectSeries = true)"
@@ -32,7 +32,7 @@
         <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" Click="@(() => isVisiblePopupSelectSeries = false)" />
         <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Secondary" Text="Cancel" Click="@(() => isVisiblePopupSelectSeries = false)" />
     </FooterContentTemplate>
-</DxPopup>
+</DxPopup> *@
 
 @if ( null != DisplayData )
 {
@@ -42,7 +42,7 @@
             <DxChartZoomAndPanSettings ArgumentAxisZoomAndPanMode="ChartAxisZoomAndPanMode.Both" />
             @foreach (DataColumn col in DisplayData.Columns)
             {
-                if(ShowSeries[col.ColumnName] == true || DisplayData.Columns.Count == 1)
+                if( true == (DisplayLegendSetting.TryGetValue(col.ColumnName, out bool res) ? res : false) )
                 {
                     <DxChartLineSeries
                         Visible="true"
@@ -57,8 +57,8 @@
             }
 
             <DxChartLegend
-                Visible="@isLengendVisible"
-                AllowToggleSeries="true"
+                Visible="@true"
+                AllowToggleSeries="false"
                 Orientation="Orientation.Vertical"
                 Position="RelativePosition.Outside"
                 HoverMode="ChartLegendHoverMode.None"

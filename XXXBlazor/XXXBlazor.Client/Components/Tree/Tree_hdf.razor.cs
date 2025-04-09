@@ -50,7 +50,7 @@ namespace XXXBlazor.Client.Pages
             }
             else
             {
-                currentNode = null;
+                currentNode = new Hdf5TreeNode();
             }
         }
 

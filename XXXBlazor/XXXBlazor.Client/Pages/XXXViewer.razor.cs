@@ -42,10 +42,12 @@ namespace XXXBlazor.Client.Pages
         // Display Data
         public DataTable? GridData;
         public DataTable? ChartData;
-        public DataTable? LegendData;
 
         // Legend Data
-        public Dictionary<string, bool> SeriesSettings { get; set; }
+        protected int SelectedLegendCount = 0;
+        public List<string>? LegendData;
+        public Dictionary<string, bool>? GridSeriesSettings { get; set; } = new Dictionary<string, bool>();
+        public Dictionary<string, bool>? ChartSeriesSettings { get; set; } = new Dictionary<string, bool>();
 
         //protected override async Task OnAfterRenderAsync(bool firstRender)
         //{
@@ -104,11 +106,11 @@ namespace XXXBlazor.Client.Pages
 
             if(SelectedFilesCount == 0)
             {
-                errorMessage = null;
-                fileModel = null;
-                selectedNode = null;
+                errorMessage = string.Empty;
+                fileModel = new Hdf5TreeNode();
+                selectedNode = new Hdf5TreeNode();
 
-                LegendData = GridData = ChartData = new DataTable().Copy();
+                GridData = ChartData = new DataTable().Copy();
             }
 
             await InvokeAsync(StateHasChanged);
@@ -126,12 +128,12 @@ namespace XXXBlazor.Client.Pages
                 }
                 */
 
-                fileModel = null;
-                selectedNode = null;
+                fileModel = new Hdf5TreeNode();
+                selectedNode = new Hdf5TreeNode();
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
 
-                errorMessage = null;
+                errorMessage = string.Empty;
                 isLoading = true;
                 processedChunks = 0;
                 processedData.Clear();
@@ -284,7 +286,7 @@ namespace XXXBlazor.Client.Pages
 
             GridData = ChartData = ConvertToDataTable(nodeData).Copy();
 
-            LegendData = GridData.Copy();
+            LegendData = LoadLegendList(GridData);
         }
 
         private async Task<List<List<DatasetData>>> LoadNodeData(Hdf5TreeNode SelNode)
@@ -432,6 +434,18 @@ namespace XXXBlazor.Client.Pages
             return dt;
         }
 
+        private List<string> LoadLegendList(DataTable table)
+        {
+            List<string> result = new List<string>();
+
+            foreach(DataColumn col in table.Columns)
+            {
+                result.Add(col.ColumnName);
+            }
+
+            return result;
+        }
+
         private void ClearCache()
         {
             nodeCache.Clear();
@@ -439,10 +453,21 @@ namespace XXXBlazor.Client.Pages
 
         protected void OnSeriesSettingsChanged(Dictionary<string, bool> updatedVSettings)
         {
-            SeriesSettings.Clear();
-            foreach (var kvp in updatedVSettings)
+            if (updatedVSettings != null)
             {
-                SeriesSettings.Add(kvp.Key, kvp.Value);
+
+                GridSeriesSettings = new Dictionary<string, bool>();
+
+                SelectedLegendCount = 0;
+
+                foreach (var kvp in updatedVSettings)
+                {
+                    GridSeriesSettings[kvp.Key] = kvp.Value;
+
+                    if( true == kvp.Value) { SelectedLegendCount++; }
+                }
+
+                ChartSeriesSettings = new Dictionary<string, bool>(GridSeriesSettings);
             }
         }
 

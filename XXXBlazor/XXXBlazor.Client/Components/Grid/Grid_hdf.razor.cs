@@ -6,27 +6,46 @@ namespace XXXBlazor.Client.Pages
     public class Hdf5GridBase : ComponentBase
     {
         [Parameter]
-        public DataTable? DisplayData { get; set; }
-        private DataTable? OldDisplayData { get; set; }
+        public DataTable? NewData { get; set; }
+        protected DataTable? DisplayData { get; set; }
 
-        protected bool needRender = false;
-        protected bool IsDataLoading => needRender;
+        [Parameter]
+        public Dictionary<string, bool>? NewLegendSetting { get; set; } = new Dictionary<string, bool>();
+        protected Dictionary<string, bool>? DisplayLegendSetting { get; set; } = new Dictionary<string, bool>();
+
+
+        protected bool IsDataLoading => IsDataChanged;
+
+        private bool IsDataChanged = false;
+        private bool IsLegendChanged = false;
 
         protected override void OnParametersSet()
         {
-            if ( !DataTableCompare.AreEqual(OldDisplayData, DisplayData) )
+            if ( !DataTableCompare.AreEqual(DisplayData, NewData) )
             {
-                needRender = true;
-                OldDisplayData = DisplayData.Copy();
+                IsDataChanged = true;
+
+                DisplayData = (NewData != null) ? NewData.Copy() : new DataTable();
             }
             else
             {
-                needRender = false;
+                IsDataChanged = false;
+            }
+
+            if ( NewLegendSetting != DisplayLegendSetting )
+            {
+                DisplayLegendSetting = NewLegendSetting;
+                IsLegendChanged = true;
+            }
+            else
+            {
+                IsLegendChanged = false;
             }
         }
 
         protected override bool ShouldRender()
         {
+            bool needRender = /* IsDataChanged || */ IsLegendChanged;
             return needRender;
         }
     }

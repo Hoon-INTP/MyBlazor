@@ -12,14 +12,16 @@ namespace XXXBlazor.Client.Pages
         public DataTable? NewData { get; set; }
         protected DataTable? DisplayData;
 
+        [Parameter]
+        public Dictionary<string, bool>? NewLegendSetting { get; set; } = new Dictionary<string, bool>();
+        protected Dictionary<string, bool>? DisplayLegendSetting { get; set; } = new Dictionary<string, bool>();
+
         protected bool isDataChanged = false;
         protected bool isDoneFirstRender = false;
         protected bool isChartVisible = false;
         protected bool isLengendVisible = false;
-        protected bool isSeriesChanged = false;
+        protected bool IsLegendChanged = false;
         protected int chartRenderKey = 0;
-
-        protected Dictionary<string, bool> ShowSeries = new Dictionary<string, bool>();
 
         protected bool isVisiblePopupSelectSeries { get; set; }
 
@@ -38,31 +40,14 @@ namespace XXXBlazor.Client.Pages
 
             try
             {
-                bool _isDataChanged = false;
-
-                _isDataChanged = !DataTableCompare.AreEqual(DisplayData, NewData);
-
-                if ( _isDataChanged )
+                if ( !DataTableCompare.AreEqual(DisplayData, NewData) )
                 {
-                    ShowSeries.Clear();
                     isDataChanged = true;
                     isChartVisible = false;
 
-
-                    DisplayData = NewData != null ? NewData.Copy() : null;
-
-
-
-                    foreach(DataColumn col in DisplayData.Columns)
-                    {
-                        ShowSeries.Add(col.ColumnName, false);
-                    }
-
-                    isSeriesChanged = true;
-
+                    DisplayData = (NewData != null) ? NewData.Copy() : new DataTable();
 
                     chartRenderKey++;
-
                     isChartVisible = true;
                 }
                 else
@@ -74,6 +59,16 @@ namespace XXXBlazor.Client.Pages
                         isChartVisible = true;
                         StateHasChanged();
                     }
+                }
+
+                if ( NewLegendSetting != DisplayLegendSetting )
+                {
+                    DisplayLegendSetting = NewLegendSetting;
+                    IsLegendChanged = true;
+                }
+                else
+                {
+                    IsLegendChanged = false;
                 }
             }
             catch (Exception ex)
@@ -98,19 +93,17 @@ namespace XXXBlazor.Client.Pages
 
         protected override bool ShouldRender()
         {
-            bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && DisplayData != null) || isSeriesChanged;
+            bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && DisplayData != null) || IsLegendChanged;
             return needRender;
+
+            //bool needRender = /* IsDataChanged || */ IsLegendChanged;
+            //return needRender;
         }
 
         protected object GetDataValue(DataRow row, DataColumn col)
         {
             var datasetData = (DatasetData)row[col.ColumnName];
             return datasetData.Data;
-        }
-
-        protected void CheckedChanged(string seriesName, bool bMode)
-        {
-            ShowSeries[seriesName] = bMode;
         }
 
     }

@@ -12,7 +12,10 @@
             <Columns>
                 @foreach (DataColumn col in DisplayData.Columns)
                 {
-                    <DxGridDataColumn FieldName='@($"{col.ColumnName}.Data")' Caption='@($"{col.ColumnName}")' ></DxGridDataColumn>
+                    if ( true == (DisplayLegendSetting.TryGetValue(col.ColumnName, out bool res) ? res : false) )
+                    {
+                        <DxGridDataColumn FieldName='@($"{col.ColumnName}.Data")' Caption='@($"{col.ColumnName}")' ></DxGridDataColumn>
+                    }
                 }
             </Columns>
             <EmptyDataAreaTemplate>
