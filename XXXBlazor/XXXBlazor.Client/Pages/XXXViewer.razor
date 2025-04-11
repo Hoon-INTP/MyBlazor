@@ -10,128 +10,90 @@
 
 <PageTitle>XXXViewer</PageTitle>
 
-@if (!isJsInitialized)
-{
-    <div class="alert alert-info">
-        <h6>JavaScript 초기화 중입니다...</h6>
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <p>@errorMessage</p>
-            <button class="btn btn-sm btn-primary" @onclick="RetryInitialize">재시도</button>
-        }
-    </div>
-}
-else
-{
-    <DxStackLayout Orientation="Orientation.Horizontal">
-        <Items>
-            <DxStackLayoutItem Length="15%">
-                <Template>
-                    <div>
-                        <DxStackLayout Orientation="Orientation.Vertical">
-                                <Items>
-                                    <DxStackLayoutItem Length="70px">
-                                        <Template>
-                                            <div>
-                                                <DxFileInput
-                                                    Visible="true"
-                                                    ShowFileList="true"
-                                                    MaxFileCount="10"
-                                                    MaxFileSize="@MaxFileSize"
-                                                    AllowedFileExtensions="@(new List<string> { ".hdf5", ".h5" })"
-                                                    AllowMultiFileUpload="false"
-                                                    FilesUploading="OnFilesUploading"
-                                                    SelectedFilesChanged="@SelectedFilesChanged">
-                                                </DxFileInput>
-                                            </div>
-                                        </Template>
-                                    </DxStackLayoutItem>
-
-                                    <DxStackLayoutItem Length="30px">
-                                        <Template>
-                                            <div>
-                                                <Attr_hdf
-                                                    currentNode="@selectedNode">
-                                                </Attr_hdf>
-                                            </div>
-                                        </Template>
-
-                                    </DxStackLayoutItem>
-
-                                    <DxStackLayoutItem Length="100%-100px">
-                                        <Template>
-                                            <div>
-                                                <h4>Tree View</h4>
-                                            </div>
-                                            <div>
-                                                <Tree_hdf
-                                                    selectedFile="@fileModel"
-                                                    OnNodeClicked="HandleNodeClicked">
-                                                </Tree_hdf>
-                                            </div>
-                                        </Template>
-                                    </DxStackLayoutItem>
-                                </Items>
-                        </DxStackLayout>
-                    </div>
-                </Template>
-            </DxStackLayoutItem>
-
-            <DxStackLayoutItem Length="20px"></DxStackLayoutItem> @* For Padding *@
-
-            <DxStackLayoutItem Length="85%">
-                <Template>
-                    <div>
-                        @if( SelectedFilesCount != 0 )
-                        {
-                            <DxSplitter Height="800px" Orientation="Orientation.Vertical">
-                                <Panes>
-                                    <DxSplitterPane Size="60px" AllowResize="false" AllowCollapse="false">
+<DxStackLayout Orientation="Orientation.Horizontal">
+    <Items>
+        <DxStackLayoutItem Length="15%">
+            <Template>
+                <div>
+                    <DxStackLayout Orientation="Orientation.Vertical">
+                            <Items>
+                                <DxStackLayoutItem Length="70px">
+                                    <Template>
                                         <div>
-                                            <Legend_hdf NewSeriesList="@LegendData" ShowSeriesChanged="OnSeriesSettingsChanged"></Legend_hdf>
+                                            <DxFileInput
+                                                Visible="true"
+                                                ShowFileList="true"
+                                                MaxFileCount="10"
+                                                MaxFileSize="@MaxFileSize"
+                                                AllowedFileExtensions="@(new List<string> { ".hdf5", ".h5" })"
+                                                AllowMultiFileUpload="false"
+                                                FilesUploading="OnFilesUploading"
+                                                SelectedFilesChanged="@SelectedFilesChanged">
+                                            </DxFileInput>
                                         </div>
-                                    </DxSplitterPane>
-                                    <DxSplitterPane MaxSize="90%" AllowCollapse="true">
-                                        <div>
-                                            @if(SelectedLegendCount > 0)
-                                            {
-                                                <Grid_hdf NewData="@GridData" NewLegendSetting="GridSeriesSettings"></Grid_hdf>
-                                            }
-                                        </div>
-                                    </DxSplitterPane>
-                                    <DxSplitterPane MaxSize="90%" AllowCollapse="true">
-                                        <div>
-                                            @if(SelectedLegendCount > 0)
-                                            {
-                                                <Chart_hdf NewData="@ChartData" NewLegendSetting="ChartSeriesSettings"></Chart_hdf>
-                                            }
-                                        </div>
-                                    </DxSplitterPane>
-                                </Panes>
-                            </DxSplitter>
-                        }
-                    </div>
-                </Template>
-            </DxStackLayoutItem>
-        </Items>
-    </DxStackLayout>
-}
-@*
-@if (isLoading)
-{
-    <div>
-        <h6>File is Loading!!! (@processedChunks/@totalChunks)</h6>
-        <progress value="@processedChunks" max="@totalChunks"></progress>
-    </div>
-}
-else if (!string.IsNullOrEmpty(errorMessage) && isJsInitialized)
-{
-    <div>
-        <h6>@errorMessage</h6>
-    </div>
-}
-else if (processedChunks > 0)
-{
+                                    </Template>
+                                </DxStackLayoutItem>
 
-}
- *@
+                                <DxStackLayoutItem Length="30px">
+                                    <Template>
+                                        <div>
+                                            <Attr_hdf currentNode="@selectedNode"></Attr_hdf>
+                                        </div>
+                                    </Template>
+
+                                </DxStackLayoutItem>
+
+                                <DxStackLayoutItem Length="100%-100px">
+                                    <Template>
+                                        <div>
+                                            <h4>Tree View</h4>
+                                        </div>
+                                        <div>
+                                            <Tree_hdf selectedFile="@fileModel" OnNodeClicked="HandleNodeClicked"></Tree_hdf>
+                                        </div>
+                                    </Template>
+                                </DxStackLayoutItem>
+                            </Items>
+                    </DxStackLayout>
+                </div>
+            </Template>
+        </DxStackLayoutItem>
+
+        <DxStackLayoutItem Length="20px"></DxStackLayoutItem> @* For Padding *@
+
+        <DxStackLayoutItem Length="85%">
+            <Template>
+                <div>
+                    @if( SelectedFilesCount != 0 )
+                    {
+                        <DxSplitter Height="800px" Orientation="Orientation.Vertical">
+                            <Panes>
+                                <DxSplitterPane Size="60px" AllowResize="false" AllowCollapse="false">
+                                    <div>
+                                        <Legend_hdf NewSeriesList="@LegendData" ShowSeriesChanged="OnSeriesSettingsChanged"></Legend_hdf>
+                                    </div>
+                                </DxSplitterPane>
+                                <DxSplitterPane MaxSize="90%" AllowCollapse="true">
+                                    <div>
+                                        @if(SelectedLegendCount > 0)
+                                        {
+                                            <Grid_hdf NewData="@GridData" NewLegendSetting="GridSeriesSettings"></Grid_hdf>
+                                        }
+                                    </div>
+                                </DxSplitterPane>
+                                <DxSplitterPane MaxSize="90%" AllowCollapse="true">
+                                    <div>
+                                        @if(SelectedLegendCount > 0)
+                                        {
+                                            <Chart_hdf NewData="@ChartData" NewLegendSetting="ChartSeriesSettings"></Chart_hdf>
+                                        }
+                                    </div>
+                                </DxSplitterPane>
+                            </Panes>
+                        </DxSplitter>
+                    }
+                </div>
+            </Template>
+        </DxStackLayoutItem>
+    </Items>
+</DxStackLayout>

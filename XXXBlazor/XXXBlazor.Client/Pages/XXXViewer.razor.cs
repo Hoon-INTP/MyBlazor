@@ -7,11 +7,13 @@ using DevExpress.Blazor;
 using XXXBlazor.Client.Services;
 using XXXBlazor.Client.Models;
 
+
 namespace XXXBlazor.Client.Pages
 {
     public class XXXViewerBase : ComponentBase, IDisposable
     {
         [Inject] protected IHdf5FileReader iHdf5Reader { get; set; }
+        [Inject] protected Hdf5StateService StateService { get; set; }
         [Inject] protected IJSRuntime JSRuntime { get; set; }
 
         protected const int MaxFileSize = 15 * 1024 * 1024;
@@ -44,8 +46,8 @@ namespace XXXBlazor.Client.Pages
         public DataTable? ChartData;
 
         // Legend Data
-        protected int SelectedLegendCount = 0;
         public List<string>? LegendData;
+        protected int SelectedLegendCount = 0;
         public Dictionary<string, bool>? GridSeriesSettings { get; set; } = new Dictionary<string, bool>();
         public Dictionary<string, bool>? ChartSeriesSettings { get; set; } = new Dictionary<string, bool>();
 
@@ -284,9 +286,12 @@ namespace XXXBlazor.Client.Pages
 
             nodeData = await LoadNodeData(node);
 
-            GridData = ChartData = ConvertToDataTable(nodeData).Copy();
+            GridData = ConvertToDataTable(nodeData).Copy();
+            ChartData = GridData.Copy();
 
             LegendData = new List<string>(LoadLegendList(GridData));
+
+            StateService.NotifyTreeNodeChanged(node, LegendData);
         }
 
         private async Task<List<List<DatasetData>>> LoadNodeData(Hdf5TreeNode SelNode)
@@ -467,6 +472,11 @@ namespace XXXBlazor.Client.Pages
                     if( true == kvp.Value) { SelectedLegendCount++; }
                 }
 
+                ChartSeriesSettings = new Dictionary<string, bool>(GridSeriesSettings);
+            }
+            else
+            {
+                GridSeriesSettings = new Dictionary<string, bool>();
                 ChartSeriesSettings = new Dictionary<string, bool>(GridSeriesSettings);
             }
         }

@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Components;
-using System.Collections.Immutable;
-using System.Data;
 using XXXBlazor.Client.Models;
+using XXXBlazor.Client.Services;
+
 
 namespace XXXBlazor.Client.Pages
 {
-    public class Hdf5LegendBase : ComponentBase
+    public class Hdf5LegendBase : ComponentBase, IDisposable
     {
+        [Inject]
+        protected Hdf5StateService StateService { get; set; }
+
         [Parameter]
         public List<string>? NewSeriesList { get; set; }
         protected List<string>? ShowSeriesList { get; set; }
@@ -25,6 +28,8 @@ namespace XXXBlazor.Client.Pages
         protected override void OnInitialized()
         {
             InitializeShowSeries();
+
+            StateService.TreeNodeChanged += HandleTreeNodeChanged;
         }
 
         private void InitializeShowSeries()
@@ -48,6 +53,31 @@ namespace XXXBlazor.Client.Pages
             }
 
 
+        }
+
+        private async void HandleTreeNodeChanged(Hdf5TreeNode node, List<string> newLegendData)
+        {
+            InitializeWithFirstSelected(newLegendData);
+
+            await InvokeAsync(StateHasChanged);
+        }
+
+        private async void InitializeWithFirstSelected(List<string> newLegendData)
+        {
+            if (newLegendData != null && newLegendData.Any())
+            {
+                TempSelection.Clear();
+                OldShowSeries.Clear();
+
+                foreach (string item in newLegendData)
+                {
+                    bool isSelected = item == newLegendData[0];
+                    TempSelection[item] = isSelected;
+                    OldShowSeries[item] = isSelected;
+                }
+
+                await ShowSeriesChanged.InvokeAsync(TempSelection);
+            }
         }
 
         protected void CheckedChanged(string seriesName, bool bMode)
@@ -100,5 +130,10 @@ namespace XXXBlazor.Client.Pages
             isVisiblePopupSelectSeries = true;
         }
 
+        public void Dispose()
+        {
+            // 이벤트 구독 해제
+            StateService.TreeNodeChanged -= HandleTreeNodeChanged;
+        }
     }
 }

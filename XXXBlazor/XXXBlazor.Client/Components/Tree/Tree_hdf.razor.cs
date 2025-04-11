@@ -21,8 +21,6 @@ namespace XXXBlazor.Client.Pages
         // 노드 경로를 키로 사용하는 딕셔너리
         protected Dictionary<string, Hdf5TreeNode> nodePathMap = new Dictionary<string, Hdf5TreeNode>();
 
-        protected bool ShowAttribute = false;
-
         protected override void OnParametersSet()
         {
             if (selectedFile != null)
@@ -128,9 +126,5 @@ namespace XXXBlazor.Client.Pages
             }
         }
 
-        protected void CheckedChanged(bool bMode)
-        {
-            ShowAttribute = bMode;
-        }
     }
 }

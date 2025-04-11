@@ -12,6 +12,7 @@ builder.Services.AddRazorComponents()
 
     // Server Program.cs에 추가
 builder.Services.AddScoped<IHdf5FileReader, Hdf5FileReader>();
+builder.Services.AddSingleton<Hdf5StateService>();
 
 builder.Services.AddDevExpressBlazor(options => {
     options.BootstrapVersion = DevExpress.Blazor.BootstrapVersion.v5;
