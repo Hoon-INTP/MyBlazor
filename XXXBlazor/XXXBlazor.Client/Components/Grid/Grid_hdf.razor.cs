@@ -45,7 +45,7 @@ namespace XXXBlazor.Client.Pages
 
         protected override bool ShouldRender()
         {
-            bool needRender = /* IsDataChanged || */ IsLegendChanged;
+            bool needRender = IsDataChanged || IsLegendChanged;
             return needRender;
         }
     }

@@ -93,11 +93,11 @@ namespace XXXBlazor.Client.Pages
 
         protected override bool ShouldRender()
         {
-            bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && DisplayData != null) || IsLegendChanged;
-            return needRender;
-
-            //bool needRender = /* IsDataChanged || */ IsLegendChanged;
+            //bool needRender = isDataChanged || !isDoneFirstRender || (!isChartVisible && DisplayData != null) || IsLegendChanged;
             //return needRender;
+
+            bool needRender = isDataChanged || IsLegendChanged;
+            return needRender;
         }
 
         protected object GetDataValue(DataRow row, DataColumn col)

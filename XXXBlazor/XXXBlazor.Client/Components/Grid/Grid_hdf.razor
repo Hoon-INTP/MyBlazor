@@ -5,10 +5,10 @@
 
 @inherits Hdf5GridBase
 
-@if(null != DisplayData)
+@if(null != DisplayData || DisplayData.Columns.Count > 0)
 {
     <div>
-        <DxGrid data="@DisplayData"  SizeMode="SizeMode.Small" VirtualScrollingEnabled="true" TextWrapEnabled="false" AllowSort="false" CssClass="grid-size">
+        <DxGrid data="@DisplayData"  SizeMode="SizeMode.Small" VirtualScrollingEnabled="false" PageSize=9999 TextWrapEnabled="false" AllowSort="false" CssClass="grid-size">
             <Columns>
                 @foreach (DataColumn col in DisplayData.Columns)
                 {

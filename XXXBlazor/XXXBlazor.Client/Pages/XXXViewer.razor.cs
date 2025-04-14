@@ -16,6 +16,9 @@ namespace XXXBlazor.Client.Pages
         [Inject] protected Hdf5StateService StateService { get; set; }
         [Inject] protected IJSRuntime JSRuntime { get; set; }
 
+
+        //protected DxFileInput HdfFileInput { get; set; }
+
         protected const int MaxFileSize = 15 * 1024 * 1024;
 
         protected bool isLoading = false;
@@ -132,8 +135,8 @@ namespace XXXBlazor.Client.Pages
 
                 fileModel = new Hdf5TreeNode();
                 selectedNode = new Hdf5TreeNode();
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
+                //GC.Collect();
+                //GC.WaitForPendingFinalizers();
 
                 errorMessage = string.Empty;
                 isLoading = true;
@@ -190,10 +193,10 @@ namespace XXXBlazor.Client.Pages
 
                     memoryStream.Position = 0;
 
-                    stopwatch.Stop();
+                    //stopwatch.Stop();
                     //Console.WriteLine($"[Elapsed Time: {stopwatch.ElapsedMilliseconds}ms]");
 
-                    await Task.Run(() => fileModel = iHdf5Reader.LoadFromStream(memoryStream, fileName));
+                    fileModel = iHdf5Reader.LoadFromStream(memoryStream, fileName);
 
                     selectedNode = fileModel;
                 }
@@ -275,6 +278,8 @@ namespace XXXBlazor.Client.Pages
             {
                 isLoading = false;
                 StateHasChanged();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
             }
         }
 

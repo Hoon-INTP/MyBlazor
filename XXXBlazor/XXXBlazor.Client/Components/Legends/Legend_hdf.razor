@@ -23,15 +23,27 @@
         ShowFooter="true"
         HeaderText="Select Series">
         <BodyContentTemplate>
-            @foreach(string item in ShowSeriesList)
-            {
-                <DxCheckBox CheckType="CheckType.Switch"
-                    Checked="@(TempSelection.ContainsKey(item) ? TempSelection[item] : false)"
-                    CheckedChanged="@((bool t) => CheckedChanged(item, t))"
-                    Alignment="CheckBoxContentAlignment.Default">
-                    @item
-                </DxCheckBox>
-            }
+            <div style="display: flex; gap: 10px;">
+                <DxButton 
+                    Text="Select All"
+                    Click="@(() => OnClickSelectAll())">
+                </DxButton>
+                <DxButton 
+                    Text="DeSelect All"
+                    Click="@(() => OnClickDeSelectAll())">
+                </DxButton>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                @foreach(string item in ShowSeriesList)
+                {
+                    <DxCheckBox CheckType="CheckType.Switch"
+                        Checked="@(TempSelection.ContainsKey(item) ? TempSelection[item] : false)"
+                        CheckedChanged="@((bool t) => CheckedChanged(item, t))"
+                        Alignment="CheckBoxContentAlignment.Default">
+                        @item
+                    </DxCheckBox>
+                }
+            </div>
         </BodyContentTemplate>
 
         <FooterContentTemplate>

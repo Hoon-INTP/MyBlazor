@@ -121,6 +121,30 @@ namespace XXXBlazor.Client.Pages
             isVisiblePopupSelectSeries = false;
         }
 
+        protected void OnClickSelectAll()
+        {
+            var keys = TempSelection.Keys.ToList();
+            foreach (var key in keys)
+            {
+                TempSelection[key] = true;
+            }
+
+            StateHasChanged();
+        }
+
+        protected void OnClickDeSelectAll()
+        {
+            var keys = TempSelection.Keys.ToList();
+            foreach (var key in keys)
+            {
+                TempSelection[key] = false;
+            }
+
+            TempSelection[ShowSeriesList[0]] = true;
+
+            StateHasChanged();
+        }
+
         protected void OpenSelectSeriesPopup()
         {
             if(null == ShowSeriesList) return;
